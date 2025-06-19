@@ -8,6 +8,8 @@
 #ifndef INC_STM32F746XX_H_
 #define INC_STM32F746XX_H_
 
+
+#include <stdint.h>
 /*
 * Base addresses of Glash and SRAM memories based on User Manual
 */
@@ -103,3 +105,41 @@
 #define SPI6_BASEADDR           (APB2PERIPH_BASEADDR + 0x5400UL)
 
 #define LCD_TFT_BASEADDR        (APB2PERIPH_BASEADDR + 0x6800UL)
+
+
+/****************************Peripheral register definition structures**************************/
+
+// GPIO
+// Refer to the User manual 6.4.11 GPIO register map
+// This structure is a general structure for all GPIO
+
+
+//structure的空間會是連續的 所以MODER如果在0x00那麼OTYPER就會在0x04 (32bits=4bytes 四個位置)
+typedef struct{
+    volatile uint32_t MODER;                         /*!< GPIO Port mode register                                                                  Address offset:0x00>*/
+    volatile uint32_t OTYPER;                        /*!< GPIO Port output type register                                                           Address offset:0x04>*/
+    volatile uint32_t OSPEEDR;                       /*!< GPIO Port output speed register                                                          Address offset:0x08>*/
+    volatile uint32_t PUPDR;                         /*!< GPIO Port pull-up/pull-down register                                                     Address offset:0x0C>*/
+    volatile uint32_t IDR;                           /*!< GPIO Port input data register                                                            Address offset:0x10>*/
+    volatile uint32_t ODR;                           /*!< GPIO Port output data register                                                           Address offset:0x14>*/
+    volatile uint32_t BSRR;                          /*!< GPIO Port bit set/reset register                                                         Address offset:0x18>*/
+    volatile uint32_t LCKR;                          /*!< GPIO Port configuration lock register register                                           Address offset:0x1C>*/
+    volatile uint32_t AFR[2];                        /*!< [0]GPIO alternate function low register,[1]GPIO alternate function HIGH register         Address offset:0x20>*/
+}GPIO_RegDef_t;
+
+/*
+Peripheral definitions 
+*/
+#define GPIOA  ((GPIO_RegDef *)GPIOA_BASEADDR)
+#define GPIOB  ((GPIO_RegDef *)GPIOB_BASEADDR)
+#define GPIOC  ((GPIO_RegDef *)GPIOC_BASEADDR)
+#define GPIOD  ((GPIO_RegDef *)GPIOD_BASEADDR)
+#define GPIOE  ((GPIO_RegDef *)GPIOE_BASEADDR)
+#define GPIOF  ((GPIO_RegDef *)GPIOF_BASEADDR)
+#define GPIOG  ((GPIO_RegDef *)GPIOG_BASEADDR)
+#define GPIOH  ((GPIO_RegDef *)GPIOH_BASEADDR)
+#define GPIOI  ((GPIO_RegDef *)GPIOI_BASEADDR)
+#define GPIOJ  ((GPIO_RegDef *)GPIOJ_BASEADDR)
+#define GPIOK  ((GPIO_RegDef *)GPIOK_BASEADDR)
+
+
