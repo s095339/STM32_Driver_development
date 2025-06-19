@@ -1,0 +1,40 @@
+# 忽略 build 產生的檔案
+/Debug/
+/Release/
+/build/
+/*.elf
+/*.hex
+/*.bin
+/*.map
+
+# CubeIDE 自動產生的 log 和 metadata
+*.log
+*.launch
+*.backup
+*.tmp
+
+# system generated files
+*.o
+*.d
+*.lst
+*.srec
+
+# macOS / Windows 系統文件
+.DS_Store
+Thumbs.db
+
+# 忽略 IDE 的工作空間暫存（不建議分享）
+.vscode/
+.metadata/
+.settings/language.settings.xml
+
+# 忽略 CubeIDE 某些暫存檔
+.cproject
+.project
+.settings/
+
+# CubeIDE 自動產生的 Makefile（可選，若不手動改動）
+#Makefile
+
+# 如果你使用 STM32CubeMX 並有生成 ioc 檔，請保留：
+!*.ioc
