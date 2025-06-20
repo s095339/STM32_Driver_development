@@ -32,7 +32,7 @@ typedef struct {
     //pointer to hold the base address of the GPIO peripheral
     GPIO_RegDef_t *pGPIOx; // This holds the base address of the GPIO port to which the pin belongs
     // prefix p: pointer
-    GPIO_PinConfig_t  GPIO_PinCOnfig;// This holds GPIO pin configuration setting
+    GPIO_PinConfig_t  GPIO_PinConfig;// This holds GPIO pin configuration setting
 
 }GPIO_Handle_t;
 
@@ -63,7 +63,7 @@ typedef struct {
 //non-interrupt mode (input mode)
 #define GPIO_MODE_INPUT     0   
 #define GPIO_MODE_OUTPUT    1
-#define GPIO_MODE_ALTFN       2
+#define GPIO_MODE_ALTFN     2
 #define GPIO_MODE_ANALOG    3
 //interrupt mode (input mode)
 #define GPIO_MODE_IT_FT     4 // interrupt falling edge trigger
@@ -125,7 +125,7 @@ So we just need the base address of GPIOx
 uint8_t GPIO_ReadFromInputPin(GPIO_RegDef_t *pGPIOx, uint8_t PinNumber);
 uint16_t GPIO_ReadFromInputPort(GPIO_RegDef_t *pGPIOx);
 void GPIO_WriteToOutputPin(GPIO_RegDef_t *pGPIOx, uint8_t PinNumber, uint8_t Value);
-void GPIO_WriteToOutputPort(GPIO_RegDef_t *pGPIOx, uint16_t);
+void GPIO_WriteToOutputPort(GPIO_RegDef_t *pGPIOx, uint16_t Value);
 void GPIO_ToggleOutputPin(GPIO_RegDef_t *pGPIOx, uint8_t PinNumber);
 
 /*
@@ -133,6 +133,7 @@ ISR handling
 */
 void GPIO_IRQConfig(uint8_t IRQNumber, uint8_t IRQPriority, uint8_t EnorDi);
 void GPIO_IRQCHandler(uint8_t PinNumber);
+
 
 
 #endif /* INC_STM32F746XX_GPIO_H_ */

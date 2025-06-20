@@ -133,12 +133,12 @@ void GPIO_Init(GPIO_Handle_t *pGPIOHandle)
     //init這邊幫他做初始化
     uint32_t temp = 0;
     //1. configure the mode of gpio pin ch6.4.1
-    if(pGPIOHandle->GPIO_PinCOnfig.GPIO_PinMode <= GPIO_MODE_ANALOG)
+    if(pGPIOHandle->GPIO_PinConfig.GPIO_PinMode <= GPIO_MODE_ANALOG)
     {
         //the non-interrup mode
-        temp = (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinMode <<  (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber *2));//一個pin的pin mode有兩個bit
+        temp = (pGPIOHandle->GPIO_PinConfig.GPIO_PinMode <<  (pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber *2));//一個pin的pin mode有兩個bit
         //write to register
-        pGPIOHandle->pGPIOx->MODER &= ~(0x3<<(pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber *2)); //clear the target bit
+        pGPIOHandle->pGPIOx->MODER &= ~(0x3<<(pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber *2)); //clear the target bit
         //為甚麼要先clear?假設原本MODER是10 那我要讓它改成01 那樣的話
         // pGPIOHandle->pGPIOx->MODER |= temp; 這行會變成 10 == 10 | 01 == 11 會是錯的 所以要事先好好的clear
         pGPIOHandle->pGPIOx->MODER |= temp;
@@ -150,36 +150,36 @@ void GPIO_Init(GPIO_Handle_t *pGPIOHandle)
 
     temp = 0;
     //2. configure the speed
-    temp = (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinSpeed <<  (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber *2));
-    pGPIOHandle->pGPIOx->OSPEEDR &= ~(0x3<<(pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber *2)); //clear the target bit
+    temp = (pGPIOHandle->GPIO_PinConfig.GPIO_PinSpeed <<  (pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber *2));
+    pGPIOHandle->pGPIOx->OSPEEDR &= ~(0x3<<(pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber *2)); //clear the target bit
     pGPIOHandle->pGPIOx->OSPEEDR |= temp;
     temp = 0;
 
 
     //3. configure the pupd settings 
-    temp = (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinPuPdControl <<  (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber *2));
-    pGPIOHandle->pGPIOx->PUPDR &= ~(0x3<<(pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber *2)); //clear the target bit
+    temp = (pGPIOHandle->GPIO_PinConfig.GPIO_PinPuPdControl <<  (pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber *2));
+    pGPIOHandle->pGPIOx->PUPDR &= ~(0x3<<(pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber *2)); //clear the target bit
     pGPIOHandle->pGPIOx->PUPDR |= temp;
     temp = 0;
 
     //4. configure the optype ch6.4.2
-    temp = (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinOPType <<  (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber));
-    pGPIOHandle->pGPIOx->PUPDR &= ~(0x1<<pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber); //clear the target bit
+    temp = (pGPIOHandle->GPIO_PinConfig.GPIO_PinOPType <<  (pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber));
+    pGPIOHandle->pGPIOx->PUPDR &= ~(0x1<<pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber); //clear the target bit
     pGPIOHandle->pGPIOx->PUPDR |= temp;
     temp = 0;
     
     //5. configure the alt functionality  ch6.4.9 and 6.4.10
-    if(pGPIOHandle->GPIO_PinCOnfig.GPIO_PinMode == GPIO_MODE_ALTFN)
+    if(pGPIOHandle->GPIO_PinConfig.GPIO_PinMode == GPIO_MODE_ALTFN)
     {
-        temp = (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinAltFunMode <<  (4* (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber &= 0x07 )));
-        if(pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber >7)
+        temp = (pGPIOHandle->GPIO_PinConfig.GPIO_PinAltFunMode <<  (4* (pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber &= 0x07 )));
+        if(pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber >7)
         {
-            pGPIOHandle->pGPIOx->AFR[1] &= ~(0xF<<pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber*4); //clear the target bit
+            pGPIOHandle->pGPIOx->AFR[1] &= ~(0xF<<pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber*4); //clear the target bit
             pGPIOHandle->pGPIOx->AFR[1] |= temp;
         }
         else
         {
-            pGPIOHandle->pGPIOx->AFR[0] &= ~(0xF<<pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber*4); //clear the target bit
+            pGPIOHandle->pGPIOx->AFR[0] &= ~(0xF<<pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber*4); //clear the target bit
             pGPIOHandle->pGPIOx->AFR[0] |= temp;
         }
     
@@ -188,25 +188,152 @@ void GPIO_Init(GPIO_Handle_t *pGPIOHandle)
     
 
 }
+
+
+/***************************************************
+ * @fn                      - GPIO_DeInit
+ * 
+ * @brief                   - 
+ * 
+ * @param[in]               - 
+ *
+ * 
+ * @return                  - none
+ * 
+ * @note                    - none
+ * */
 void GPIO_DeInit(GPIO_RegDef_t *pGPIOx)
 {
-
+    if(pGPIOx == GPIOA)
+        {
+            GPIOA_REG_RESET();
+        }else if (pGPIOx == GPIOB)
+        {
+            GPIOB_REG_RESET();
+        }else if (pGPIOx == GPIOC)
+        {
+            GPIOC_REG_RESET();
+        }else if (pGPIOx == GPIOD)
+        {
+            GPIOD_REG_RESET();
+        }else if (pGPIOx == GPIOE)
+        {
+            GPIOE_REG_RESET();
+        }else if (pGPIOx == GPIOF)
+        {
+            GPIOF_REG_RESET();
+        }else if (pGPIOx == GPIOG)
+        {
+            GPIOG_REG_RESET();
+        }else if (pGPIOx == GPIOH)
+        {
+            GPIOH_REG_RESET();
+        }else if (pGPIOx == GPIOI)
+        {
+            GPIOI_REG_RESET();
+        }else if (pGPIOx == GPIOJ)
+        {
+            GPIOJ_REG_RESET();
+        }else if (pGPIOx == GPIOK)
+        {
+            GPIOK_REG_RESET();
+        }
 }
 /*reset the register
 in UM 5.3.5 RCC AHB1 peripheral reset register(RCC_AHB1RSTR).
 RCC provids an useful funciton that help us reset the peripheral. By setting the 
-corresponding bit, we can have the corresponding peripherval reset.
+corresponding bit once and resetting that bit(That is, send a pulse to reset pin), we can have the corresponding peripherval reset.  
 So we just need the base address of GPIOx
 */
 
 /*
  Data read and wirte
 */
-uint8_t GPIO_ReadFromInputPin(GPIO_RegDef_t *pGPIOx, uint8_t PinNumber);
-uint16_t GPIO_ReadFromInputPort(GPIO_RegDef_t *pGPIOx);
-void GPIO_WriteToOutputPin(GPIO_RegDef_t *pGPIOx, uint8_t PinNumber, uint8_t Value);
-void GPIO_WriteToOutputPort(GPIO_RegDef_t *pGPIOx, uint16_t);
-void GPIO_ToggleOutputPin(GPIO_RegDef_t *pGPIOx, uint8_t PinNumber);
+
+
+/***************************************************
+ * @fn                      - GPIO_ReadFromInputPin
+ * 
+ * @brief                   - 
+ * 
+ * @param[in]               - 
+ *
+ * 
+ * @return                  - none
+ * 
+ * @note                    - none
+ * */
+uint8_t GPIO_ReadFromInputPin(GPIO_RegDef_t *pGPIOx, uint8_t PinNumber)
+{
+    uint8_t value;
+    value = (uint8_t)((pGPIOx -> IDR >> PinNumber) & 0x00000001);
+    return value;
+}
+
+
+
+/***************************************************
+ * @fn                      - GPIO_ReadFromInputPort
+ * 
+ * @brief                   - 
+ * 
+ * @param[in]               - 
+ *
+ * 
+ * @return                  - none
+ * 
+ * @note                    - none
+ * */
+uint16_t GPIO_ReadFromInputPort(GPIO_RegDef_t *pGPIOx)
+{
+    uint16_t value;
+    value = (uint16_t)(pGPIOx -> IDR);
+    return value;
+}
+
+/***************************************************
+ * @fn                      - GPIO_WriteToOutputPin
+ * 
+ * @brief                   - 
+ * 
+ * @param[in]               - 
+ *
+ * 
+ * @return                  - none
+ * 
+ * @note                    - none
+ * */
+void GPIO_WriteToOutputPin(GPIO_RegDef_t *pGPIOx, uint8_t PinNumber, uint8_t Value)
+{
+    if(Value == GPIO_PIN_SET)
+    {
+        pGPIOx->ODR |= 1 << PinNumber;
+    }else
+    {
+        pGPIOx->ODR &= ~(0 << PinNumber);
+    }   
+}
+
+
+/***************************************************
+ * @fn                      - GPIO_WriteToOutputPort
+ * 
+ * @brief                   - 
+ * 
+ * @param[in]               - 
+ *
+ * 
+ * @return                  - none
+ * 
+ * @note                    - none
+ * */
+void GPIO_WriteToOutputPort(GPIO_RegDef_t *pGPIOx, uint16_t Value)
+{
+    pGPIOx->ODR = Value;
+}
+void GPIO_ToggleOutputPin(GPIO_RegDef_t *pGPIOx, uint8_t PinNumber){
+    pGPIOx->ODR ^= 1 << PinNumber;
+}
 
 /*
 ISR handling

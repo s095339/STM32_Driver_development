@@ -31,8 +31,7 @@
 #define AHB1PERIPH_BASEADDR     0x40020000UL
 #define AHB2PERIPH_BASEADDR     0x50000000UL
 #define AHB3PERIPH_BASEADDR     0x60000000UL
-/* INC_STM32F746XX_H_ */
-#endif 
+
 
 
 /*
@@ -244,6 +243,8 @@ Peripheral definitions
 
 //////////
 
+
+
 /*
 * Clock Disable Macros for GPIOx peripherals
 */
@@ -299,6 +300,22 @@ Peripheral definitions
 */
 #define SYSCFG_PLCK_DI() (RCC->APB2ENR &= ~(1<<14))
 
+
+/*
+ Macros to reset GPIOx peripherals
+*/
+
+#define GPIOA_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<0)); (RCC->AHB1RSTR &= ~(1<<0));}while(0) //這樣就可以做兩件事情 做一次 因為while(0)
+#define GPIOB_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<1)); (RCC->AHB1RSTR &= ~(1<<1));}while(0) 
+#define GPIOC_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<2)); (RCC->AHB1RSTR &= ~(1<<2));}while(0) 
+#define GPIOD_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<3)); (RCC->AHB1RSTR &= ~(1<<3));}while(0) 
+#define GPIOE_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<4)); (RCC->AHB1RSTR &= ~(1<<4));}while(0) 
+#define GPIOF_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<5)); (RCC->AHB1RSTR &= ~(1<<5));}while(0) 
+#define GPIOG_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<6)); (RCC->AHB1RSTR &= ~(1<<6));}while(0) 
+#define GPIOH_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<7)); (RCC->AHB1RSTR &= ~(1<<7));}while(0) 
+#define GPIOI_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<8)); (RCC->AHB1RSTR &= ~(1<<8));}while(0) 
+#define GPIOJ_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<9)); (RCC->AHB1RSTR &= ~(1<<9));}while(0) 
+#define GPIOK_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<10)); (RCC->AHB1RSTR &= ~(1<<10));}while(0) 
 //some generic marcos
 
 #define ENABLE              1
@@ -307,3 +324,11 @@ Peripheral definitions
 #define RESET               DISABLE
 #define GPIO_PIN_SET        SET
 #define GPIO_PIN_RESET      RESET
+
+
+//include
+#include "stm32f746xx_gpio.h"
+
+
+/* INC_STM32F746XX_H_ */
+#endif 
