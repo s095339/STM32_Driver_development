@@ -92,7 +92,7 @@
 #define TIM1_BASEADDR           (APB2PERIPH_BASEADDR + 0x0000UL)
 #define TIM8_BASEADDR           (APB2PERIPH_BASEADDR + 0x0400UL)
 #define USART1_BASEADDR         (APB2PERIPH_BASEADDR + 0x1000UL)
-#define USART1_BASEADDR         (APB2PERIPH_BASEADDR + 0x1400UL)
+#define USART6_BASEADDR         (APB2PERIPH_BASEADDR + 0x1400UL)
 
 #define SPI1_BASEADDR           (APB2PERIPH_BASEADDR + 0x3000UL)
 #define SPI4_BASEADDR           (APB2PERIPH_BASEADDR + 0x3400UL)
@@ -191,3 +191,110 @@ Peripheral definitions
 /*
 * Clock Enable Macros for GPIOx peripherals
 */
+// Since gpiox are on the AHB1 bus, so we need to access the RCC AHB1 peripheral clock register ch5.3.10
+// PLCK = peripheral clock
+#define GPIOA_PLCK_EN()   (RCC->AHB1ENR |=(1<<0))  
+#define GPIOB_PLCK_EN()   (RCC->AHB1ENR |=(1<<1)) 
+#define GPIOC_PLCK_EN()   (RCC->AHB1ENR |=(1<<2)) 
+#define GPIOD_PLCK_EN()   (RCC->AHB1ENR |=(1<<3)) 
+#define GPIOE_PLCK_EN()   (RCC->AHB1ENR |=(1<<4)) 
+#define GPIOF_PLCK_EN()   (RCC->AHB1ENR |=(1<<5)) 
+#define GPIOG_PLCK_EN()   (RCC->AHB1ENR |=(1<<6)) 
+#define GPIOH_PLCK_EN()   (RCC->AHB1ENR |=(1<<7)) 
+#define GPIOI_PLCK_EN()   (RCC->AHB1ENR |=(1<<8)) 
+#define GPIOJ_PLCK_EN()   (RCC->AHB1ENR |=(1<<9)) 
+#define GPIOK_PLCK_EN()   (RCC->AHB1ENR |=(1<<10)) 
+
+/*
+* Clock Enable Macros for I2Cx peripherals
+*/
+#define I2C1_PLCK_EN()    (RCC->APB1ENR |=(1<<21))
+#define I2C2_PLCK_EN()    (RCC->APB1ENR |=(1<<22))
+#define I2C3_PLCK_EN()    (RCC->APB1ENR |=(1<<23))
+#define I2C4_PLCK_EN()    (RCC->APB1ENR |=(1<<24))
+
+/*
+* Clock Enable Macros for SPIx peripherals
+*/
+#define SPI1_PLCK_EN()    (RCC->APB2ENR |=(1<<12))
+#define SPI4_PLCK_EN()    (RCC->APB2ENR |=(1<<13))
+#define SPI5_PLCK_EN()    (RCC->APB2ENR |=(1<<20))
+#define SPI6_PLCK_EN()    (RCC->APB2ENR |=(1<<21))
+
+#define SPI2_I2S2_PLCK_EN()    (RCC->APB1ENR |=(1<<14))
+#define SPI3_I2S3_PLCK_EN()    (RCC->APB1ENR |=(1<<15))
+/*
+* Clock Enable Macros for USARTx peripherals
+*/
+
+#define USART1_PLCK_EN()  (RCC->APB2ENR |=(1<<4))
+#define USART6_PLCK_EN()  (RCC->APB2ENR |=(1<<5))
+
+#define USART2_PLCK_EN()  (RCC->APB1ENR |=(1<<17))
+#define USART3_PLCK_EN()  (RCC->APB1ENR |=(1<<18))
+
+#define UART4_PLCK_EN()  (RCC->APB1ENR |=(1<<19))
+#define UART5_PLCK_EN()  (RCC->APB1ENR |=(1<<20))
+#define UART7_PLCK_EN()  (RCC->APB1ENR |=(1<<30))
+#define UART8_PLCK_EN()  (RCC->APB1ENR |=(1<<31))
+/*
+* Clock Enable Macros for SYSCFG peripheral
+*/
+#define SYSCFG_PLCK_EN() (RCC->APB2ENR |=(1<<14))
+
+//////////
+
+/*
+* Clock Disable Macros for GPIOx peripherals
+*/
+
+#define GPIOA_PLCK_DI()   (RCC->AHB1ENR &= ~(1<<0))  
+#define GPIOB_PLCK_DI()   (RCC->AHB1ENR &= ~(1<<1)) 
+#define GPIOC_PLCK_DI()   (RCC->AHB1ENR &= ~(1<<2)) 
+#define GPIOD_PLCK_DI()   (RCC->AHB1ENR &= ~(1<<3)) 
+#define GPIOE_PLCK_DI()   (RCC->AHB1ENR &= ~(1<<4)) 
+#define GPIOF_PLCK_DI()   (RCC->AHB1ENR &= ~(1<<5)) 
+#define GPIOG_PLCK_DI()   (RCC->AHB1ENR &= ~(1<<6)) 
+#define GPIOH_PLCK_DI()   (RCC->AHB1ENR &= ~(1<<7)) 
+#define GPIOI_PLCK_DI()   (RCC->AHB1ENR &= ~(1<<8)) 
+#define GPIOJ_PLCK_DI()   (RCC->AHB1ENR &= ~(1<<9)) 
+#define GPIOK_PLCK_DI()   (RCC->AHB1ENR &= ~(1<<10)) 
+
+
+
+/*
+* Clock Disable Macros for I2Cx peripherals
+*/
+#define I2C1_PLCK_DI()    (RCC->APB1ENR &= ~(1<<21))
+#define I2C2_PLCK_DI()    (RCC->APB1ENR &= ~(1<<22))
+#define I2C3_PLCK_DI()    (RCC->APB1ENR &= ~(1<<23))
+#define I2C4_PLCK_DI()    (RCC->APB1ENR &= ~(1<<24))
+/*
+* Clock Disable Macros for SPIx peripherals
+*/
+#define SPI1_PLCK_DI()    (RCC->APB2ENR &= ~(1<<12))
+#define SPI4_PLCK_DI()    (RCC->APB2ENR &= ~(1<<13))
+#define SPI5_PLCK_DI()    (RCC->APB2ENR &= ~(1<<20))
+#define SPI6_PLCK_DI()    (RCC->APB2ENR &= ~(1<<21))
+
+#define SPI2_I2S2_PLCK_DI()    (RCC->APB1ENR &= ~(1<<14))
+#define SPI3_I2S3_PLCK_DI()    (RCC->APB1ENR &= ~(1<<15))
+/*
+* Clock Disable Macros for USARTx peripherals
+*/
+
+#define USART1_PLCK_DI()  (RCC->APB2ENR &= ~(1<<4))
+#define USART6_PLCK_DI()  (RCC->APB2ENR &= ~(1<<5))
+
+#define USART2_PLCK_DI()  (RCC->APB1ENR &= ~(1<<17))
+#define USART3_PLCK_DI()  (RCC->APB1ENR &= ~(1<<18))
+
+#define UART4_PLCK_DI()  (RCC->APB1ENR &= ~(1<<19))
+#define UART5_PLCK_DI()  (RCC->APB1ENR &= ~(1<<20))
+#define UART7_PLCK_DI()  (RCC->APB1ENR &= ~(1<<30))
+#define UART8_PLCK_DI()  (RCC->APB1ENR &= ~(1<<31))
+
+/*
+* Clock Disable Macros for SYSCFG peripheral
+*/
+#define SYSCFG_PLCK_DI() (RCC->APB2ENR &= ~(1<<14))
