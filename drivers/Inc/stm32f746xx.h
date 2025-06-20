@@ -128,7 +128,8 @@ typedef struct{
     volatile uint32_t AFR[2];                        /*!< [0]GPIO alternate function low register,[1]GPIO alternate function HIGH register         Address offset:0x20>*/
 }GPIO_RegDef_t;
 
-
+//RCC
+// CH 5.3.27
 typedef struct 
 {
     volatile uint32_t CR;
@@ -168,11 +169,30 @@ typedef struct
 }RCC_RegDef_t;
 
 
+//EXTI
+//11.9.7
+
+typedef struct{
+    volatile uint32_t IMR;
+    volatile uint32_t EMR;
+    volatile uint32_t RTSR;
+    volatile uint32_t FTSR;
+    volatile uint32_t SWIER;
+    volatile uint32_t PR;
+}EXTI_RegDef_t;
+
+//SYSSCFG
+typedef struct{
+    volatile uint32_t MEMRMP;
+    volatile uint32_t PMC;
+    volatile uint32_t EXTICR[4];
+    volatile uint32_t RESERVE[2];
+    volatile uint32_t CMPCR;
+}SYSCFG_RegDef_t;
+
+/****************************Peripheral definitions **************************/
 
 
-/*
-Peripheral definitions 
-*/
 #define GPIOA  ((GPIO_RegDef_t *)GPIOA_BASEADDR)
 #define GPIOB  ((GPIO_RegDef_t *)GPIOB_BASEADDR)
 #define GPIOC  ((GPIO_RegDef_t *)GPIOC_BASEADDR)
@@ -186,6 +206,11 @@ Peripheral definitions
 #define GPIOK  ((GPIO_RegDef_t *)GPIOK_BASEADDR)
 
 #define RCC    ((RCC_RegDef_t *)RCC_BASEADDR)
+
+#define EXTI   ((EXTI_RegDef_t *)EXTI_BASEADDR)
+
+#define SYSCFG ((SYSCFG_RegDef_t *)SYSCFG_BASEADDR)
+
 
 /*
 * Clock Enable Macros for GPIOx peripherals
@@ -316,6 +341,22 @@ Peripheral definitions
 #define GPIOI_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<8)); (RCC->AHB1RSTR &= ~(1<<8));}while(0) 
 #define GPIOJ_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<9)); (RCC->AHB1RSTR &= ~(1<<9));}while(0) 
 #define GPIOK_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<10)); (RCC->AHB1RSTR &= ~(1<<10));}while(0) 
+
+//GPIO useful macro
+//
+#define GPIO_BASEADDR_TO_CODE(x)    ((x==GPIOA)?0:\
+                                    (x==GPIOB)?1:\
+                                    (x==GPIOC)?2:\
+                                    (x==GPIOD)?3:\
+                                    (x==GPIOE)?4:\
+                                    (x==GPIOF)?5:\
+                                    (x==GPIOG)?6:\
+                                    (x==GPIOH)?7:\
+                                    (x==GPIOI)?8:\
+                                    (x==GPIOJ)?9:\
+                                    (x==GPIOK)?10:0)
+
+
 //some generic marcos
 
 #define ENABLE              1
@@ -326,7 +367,25 @@ Peripheral definitions
 #define GPIO_PIN_RESET      RESET
 
 
-//include
+
+
+/****
+ * IRQ(Interrupt Request) Number of STM32F746x MCU
+ * NOTE: update these macros with valid values according to MCU
+ * Vector table: 10.1.2
+ */
+
+// EXTI0~15
+#define IRQ_NO_EXTI0        6
+#define IRQ_NO_EXTI1        7
+#define IRQ_NO_EXTI2        8
+#define IRQ_NO_EXTI3        9
+#define IRQ_NO_EXTI4        10
+#define IRQ_NO_EXTI9_5      23
+#define IRQ_NO_EXTI15_10    40
+
+
+                                    //include
 #include "stm32f746xx_gpio.h"
 
 
