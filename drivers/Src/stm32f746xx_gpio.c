@@ -129,12 +129,64 @@ void GPIO_PeriClockControl(GPIO_RegDef_t *pGPIOx, uint8_t EnorDi)// Given the GP
  * */
 void GPIO_Init(GPIO_Handle_t *pGPIOHandle)
 {
+    //使用者利用gpio_handle_t的結構，設定想要的GPIO功能跟pin腳，送到Init
+    //init這邊幫他做初始化
+    uint32_t temp = 0;
     //1. configure the mode of gpio pin ch6.4.1
+    if(pGPIOHandle->GPIO_PinCOnfig.GPIO_PinMode <= GPIO_MODE_ANALOG)
+    {
+        //the non-interrup mode
+        temp = (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinMode <<  (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber *2));//一個pin的pin mode有兩個bit
+        //write to register
+        pGPIOHandle->pGPIOx->MODER &= ~(0x3<<(pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber *2)); //clear the target bit
+        //為甚麼要先clear?假設原本MODER是10 那我要讓它改成01 那樣的話
+        // pGPIOHandle->pGPIOx->MODER |= temp; 這行會變成 10 == 10 | 01 == 11 會是錯的 所以要事先好好的clear
+        pGPIOHandle->pGPIOx->MODER |= temp;
+        
+    }else
+    {
+        //the interrupt mode
+    }
 
+    temp = 0;
     //2. configure the speed
+    temp = (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinSpeed <<  (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber *2));
+    pGPIOHandle->pGPIOx->OSPEEDR &= ~(0x3<<(pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber *2)); //clear the target bit
+    pGPIOHandle->pGPIOx->OSPEEDR |= temp;
+    temp = 0;
+
+
     //3. configure the pupd settings 
+    temp = (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinPuPdControl <<  (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber *2));
+    pGPIOHandle->pGPIOx->PUPDR &= ~(0x3<<(pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber *2)); //clear the target bit
+    pGPIOHandle->pGPIOx->PUPDR |= temp;
+    temp = 0;
+
     //4. configure the optype ch6.4.2
-    //5. configure the alt functionality
+    temp = (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinOPType <<  (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber));
+    pGPIOHandle->pGPIOx->PUPDR &= ~(0x1<<pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber); //clear the target bit
+    pGPIOHandle->pGPIOx->PUPDR |= temp;
+    temp = 0;
+    
+    //5. configure the alt functionality  ch6.4.9 and 6.4.10
+    if(pGPIOHandle->GPIO_PinCOnfig.GPIO_PinMode == GPIO_MODE_ALTFN)
+    {
+        temp = (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinAltFunMode <<  (4* (pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber &= 0x07 )));
+        if(pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber >7)
+        {
+            pGPIOHandle->pGPIOx->AFR[1] &= ~(0xF<<pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber*4); //clear the target bit
+            pGPIOHandle->pGPIOx->AFR[1] |= temp;
+        }
+        else
+        {
+            pGPIOHandle->pGPIOx->AFR[0] &= ~(0xF<<pGPIOHandle->GPIO_PinCOnfig.GPIO_PinNumber*4); //clear the target bit
+            pGPIOHandle->pGPIOx->AFR[0] |= temp;
+        }
+    
+        temp = 0;
+    }
+    
+
 }
 void GPIO_DeInit(GPIO_RegDef_t *pGPIOx)
 {

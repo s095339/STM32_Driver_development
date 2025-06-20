@@ -54,8 +54,8 @@ typedef struct {
 #define GPIO_PIN_NO_11      11
 #define GPIO_PIN_NO_12      12
 #define GPIO_PIN_NO_13      13
-#define GPIO_PIN_NO_12      14
-#define GPIO_PIN_NO_13      15
+#define GPIO_PIN_NO_14      14
+#define GPIO_PIN_NO_15      15
 /**
  *  @GPIO_PIN_MODES
  *  GPIO ipn possible modes
@@ -63,7 +63,7 @@ typedef struct {
 //non-interrupt mode (input mode)
 #define GPIO_MODE_INPUT     0   
 #define GPIO_MODE_OUTPUT    1
-#define GPIO_MODE_ALT       2
+#define GPIO_MODE_ALTFN       2
 #define GPIO_MODE_ANALOG    3
 //interrupt mode (input mode)
 #define GPIO_MODE_IT_FT     4 // interrupt falling edge trigger
