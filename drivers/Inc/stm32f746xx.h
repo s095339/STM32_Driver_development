@@ -32,6 +32,9 @@
 #define NVIC_ICER2   (volatile uint32_t*)0xE000E188
 #define NVIC_ICER3   (volatile uint32_t*)0xE000E18C
 
+
+// Interrupt Priority Registers
+#define NVIC_PR_BASE_ADDR (volatile uint32_t*)0xE000E400
 /*****************************************************8 *******************/
 /*
 * Base addresses of Glash and SRAM memories based on User Manual
