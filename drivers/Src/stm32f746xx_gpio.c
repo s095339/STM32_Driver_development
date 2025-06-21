@@ -368,5 +368,46 @@ void GPIO_ToggleOutputPin(GPIO_RegDef_t *pGPIOx, uint8_t PinNumber){
 /*
 ISR handling
 */
-void GPIO_IRQConfig(uint8_t IRQNumber, uint8_t IRQPriority, uint8_t EnorDi);
+void GPIO_IRQConfig(uint8_t IRQNumber, uint8_t IRQPriority, uint8_t EnorDi)
+{
+    //refer to the ARM® Cortex®-M7 Devices Generic user guide
+    //4.2 NVIC 
+    //這邊已經不是micro controlller side 已經接觸到processor side了 所以要去看processer的文件
+    //以便設定NVIC
+    /****
+     * 我們是要去設定processor的 Interrupt Set-enable Registers(ISER) 來打開interrupt
+     *  Interrupt Clear-enable Registers(ICER) 來關掉interrupt
+     */
+    if(EnorDi == ENABLE)
+    {
+        if(EnorDi == ENABLE)
+        {
+            if(IRQNumber <= 31)
+            {
+                //program ISER0 register
+                *NVIC_ISER0 |= (1<<IRQNumber);
+
+            }else if(IRQNumber>31 && IRQNumber<64)
+            {
+                *NVIC_ISER1 |= (1<<IRQNumber%32);
+            }else if(IRQNumber>64 && IRQNumber<96)//stm32f746g的interrupt number沒有那麼多
+            {
+                *NVIC_ISER2 |= (1<<IRQNumber%64);
+            }
+        }else{
+            if(IRQNumber <= 31)
+            {
+                //program ISER0 register
+                *NVIC_ICER0 &= ~(1<<IRQNumber);
+
+            }else if(IRQNumber>31 && IRQNumber<64)
+            {
+                *NVIC_ICER1 &= ~(1<<IRQNumber%32);
+            }else if(IRQNumber>64 && IRQNumber<96)//stm32f746g的interrupt number沒有那麼多
+            {
+                *NVIC_ICER2 &= ~(1<<IRQNumber%64);
+            }
+        }
+    }
+}
 void GPIO_IRQCHandler(uint8_t PinNumber);
