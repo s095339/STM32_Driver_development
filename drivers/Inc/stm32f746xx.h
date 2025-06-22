@@ -27,14 +27,18 @@
 
 
 //interrupt Clear-enable Register
-#define NVIC_ICER0   (volatile uint32_t*)0XE000E180
-#define NVIC_ICER1   (volatile uint32_t*)0xE000E184
-#define NVIC_ICER2   (volatile uint32_t*)0xE000E188
-#define NVIC_ICER3   (volatile uint32_t*)0xE000E18C
+#define NVIC_ICER0              (volatile uint32_t*)0XE000E180
+#define NVIC_ICER1              (volatile uint32_t*)0xE000E184
+#define NVIC_ICER2              (volatile uint32_t*)0xE000E188
+#define NVIC_ICER3              (volatile uint32_t*)0xE000E18C
 
 
 // Interrupt Priority Registers
-#define NVIC_PR_BASE_ADDR (volatile uint32_t*)0xE000E400
+#define NVIC_PR_BASE_ADDR       (volatile uint32_t*)0xE000E400
+
+#define NO_PR_BITS_IMPLEMENTED  4 
+//根據UM 10.1 NVIC features 
+//雖然cortex-M7的processor提供了8bits的中段優先級，但是STM32的這個microprocessor只implement了4bits
 /*****************************************************8 *******************/
 /*
 * Base addresses of Glash and SRAM memories based on User Manual
@@ -410,8 +414,10 @@ typedef struct{
 #define IRQ_NO_EXTI9_5      23
 #define IRQ_NO_EXTI15_10    40
 
-
-                                    //include
+//Macros for all possible Interrupt priority
+#define NVIC_IRQ_RRI0       0
+#define NVIC_IRQ_RRI15      15
+                             //include
 #include "stm32f746xx_gpio.h"
 
 
