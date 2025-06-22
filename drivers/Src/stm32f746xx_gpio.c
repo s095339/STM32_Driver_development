@@ -145,6 +145,8 @@ void GPIO_Init(GPIO_Handle_t *pGPIOHandle)
         
     }else
     {
+        SYSCFG_PLCK_EN();
+        pGPIOHandle->pGPIOx->MODER &= ~(0x3<<(pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber *2)); //clear the target bit(input mode)
         //the interrupt mode
         if(pGPIOHandle->GPIO_PinConfig.GPIO_PinMode == GPIO_MODE_IT_FT)
         {
@@ -373,16 +375,17 @@ ISR handling
 /***************************************************
  * @fn                      - GPIO_IRQITConfig
  * 
- * @brief                   - 
+ * @brief                   Enable the GPIO interrupt of given Interrupt Number
  * 
- * @param[in]               - 
+ * @param[in]               IRQNumber: Interrupt Number
+ * @param[in]               EnorDi: Interrupt Enable or Disable 
  *
  * 
  * @return                  - none
  * 
  * @note                    - none
  * */
-void GPIO_IRQITConfig(uint8_t IRQNumber, uint8_t IRQPriority, uint8_t EnorDi)
+void GPIO_IRQITConfig(uint8_t IRQNumber, uint8_t EnorDi)
 {
     /*refer to the ARM® Cortex®-M7 Devices Generic user guide
     4.2 NVIC 
