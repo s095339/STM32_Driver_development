@@ -10,6 +10,36 @@
 
 
 #include <stdint.h>
+
+/************************START: Processor Specific Details *******************/
+//ARM® Cortex®-M7 Devices Generic user guide ch4.2 
+
+//interrupt Set-enable Registers
+#define NVIC_ISER0   (volatile uint32_t*)0xE000E100
+#define NVIC_ISER1   (volatile uint32_t*)0xE000E104
+#define NVIC_ISER2   (volatile uint32_t*)0xE000E108
+#define NVIC_ISER3   (volatile uint32_t*)0xE000E10C
+//下面用不到
+//#define NVIC_ISER0   (volatile uint32_t*)0xE000E100
+//#define NVIC_ISER0   (volatile uint32_t*)0xE000E100
+//#define NVIC_ISER0   (volatile uint32_t*)0xE000E100
+//#define NVIC_ISER0   (volatile uint32_t*)0xE000E100
+
+
+//interrupt Clear-enable Register
+#define NVIC_ICER0              (volatile uint32_t*)0XE000E180
+#define NVIC_ICER1              (volatile uint32_t*)0xE000E184
+#define NVIC_ICER2              (volatile uint32_t*)0xE000E188
+#define NVIC_ICER3              (volatile uint32_t*)0xE000E18C
+
+
+// Interrupt Priority Registers
+#define NVIC_PR_BASE_ADDR       (volatile uint32_t*)0xE000E400
+
+#define NO_PR_BITS_IMPLEMENTED  4 
+//根據UM 10.1 NVIC features 
+//雖然cortex-M7的processor提供了8bits的中段優先級，但是STM32的這個microprocessor只implement了4bits
+/*****************************************************8 *******************/
 /*
 * Base addresses of Glash and SRAM memories based on User Manual
 */
@@ -31,8 +61,7 @@
 #define AHB1PERIPH_BASEADDR     0x40020000UL
 #define AHB2PERIPH_BASEADDR     0x50000000UL
 #define AHB3PERIPH_BASEADDR     0x60000000UL
-/* INC_STM32F746XX_H_ */
-#endif 
+
 
 
 /*
@@ -129,7 +158,8 @@ typedef struct{
     volatile uint32_t AFR[2];                        /*!< [0]GPIO alternate function low register,[1]GPIO alternate function HIGH register         Address offset:0x20>*/
 }GPIO_RegDef_t;
 
-
+//RCC
+// CH 5.3.27
 typedef struct 
 {
     volatile uint32_t CR;
@@ -169,24 +199,48 @@ typedef struct
 }RCC_RegDef_t;
 
 
+//EXTI
+//11.9.7
+
+typedef struct{
+    volatile uint32_t IMR;
+    volatile uint32_t EMR;
+    volatile uint32_t RTSR;
+    volatile uint32_t FTSR;
+    volatile uint32_t SWIER;
+    volatile uint32_t PR;
+}EXTI_RegDef_t;
+
+//SYSSCFG
+typedef struct{
+    volatile uint32_t MEMRMP;
+    volatile uint32_t PMC;
+    volatile uint32_t EXTICR[4];
+    volatile uint32_t RESERVE[2];
+    volatile uint32_t CMPCR;
+}SYSCFG_RegDef_t;
+
+/****************************Peripheral definitions **************************/
 
 
-/*
-Peripheral definitions 
-*/
-#define GPIOA  ((GPIO_RegDef *)GPIOA_BASEADDR)
-#define GPIOB  ((GPIO_RegDef *)GPIOB_BASEADDR)
-#define GPIOC  ((GPIO_RegDef *)GPIOC_BASEADDR)
-#define GPIOD  ((GPIO_RegDef *)GPIOD_BASEADDR)
-#define GPIOE  ((GPIO_RegDef *)GPIOE_BASEADDR)
-#define GPIOF  ((GPIO_RegDef *)GPIOF_BASEADDR)
-#define GPIOG  ((GPIO_RegDef *)GPIOG_BASEADDR)
-#define GPIOH  ((GPIO_RegDef *)GPIOH_BASEADDR)
-#define GPIOI  ((GPIO_RegDef *)GPIOI_BASEADDR)
-#define GPIOJ  ((GPIO_RegDef *)GPIOJ_BASEADDR)
-#define GPIOK  ((GPIO_RegDef *)GPIOK_BASEADDR)
+#define GPIOA  ((GPIO_RegDef_t *)GPIOA_BASEADDR)
+#define GPIOB  ((GPIO_RegDef_t *)GPIOB_BASEADDR)
+#define GPIOC  ((GPIO_RegDef_t *)GPIOC_BASEADDR)
+#define GPIOD  ((GPIO_RegDef_t *)GPIOD_BASEADDR)
+#define GPIOE  ((GPIO_RegDef_t *)GPIOE_BASEADDR)
+#define GPIOF  ((GPIO_RegDef_t *)GPIOF_BASEADDR)
+#define GPIOG  ((GPIO_RegDef_t *)GPIOG_BASEADDR)
+#define GPIOH  ((GPIO_RegDef_t *)GPIOH_BASEADDR)
+#define GPIOI  ((GPIO_RegDef_t *)GPIOI_BASEADDR)
+#define GPIOJ  ((GPIO_RegDef_t *)GPIOJ_BASEADDR)
+#define GPIOK  ((GPIO_RegDef_t *)GPIOK_BASEADDR)
 
 #define RCC    ((RCC_RegDef_t *)RCC_BASEADDR)
+
+#define EXTI   ((EXTI_RegDef_t *)EXTI_BASEADDR)
+
+#define SYSCFG ((SYSCFG_RegDef_t *)SYSCFG_BASEADDR)
+
 
 /*
 * Clock Enable Macros for GPIOx peripherals
@@ -244,6 +298,8 @@ Peripheral definitions
 
 //////////
 
+
+
 /*
 * Clock Disable Macros for GPIOx peripherals
 */
@@ -298,3 +354,72 @@ Peripheral definitions
 * Clock Disable Macros for SYSCFG peripheral
 */
 #define SYSCFG_PLCK_DI() (RCC->APB2ENR &= ~(1<<14))
+
+
+/*
+ Macros to reset GPIOx peripherals
+*/
+
+#define GPIOA_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<0)); (RCC->AHB1RSTR &= ~(1<<0));}while(0) //這樣就可以做兩件事情 做一次 因為while(0)
+#define GPIOB_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<1)); (RCC->AHB1RSTR &= ~(1<<1));}while(0) 
+#define GPIOC_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<2)); (RCC->AHB1RSTR &= ~(1<<2));}while(0) 
+#define GPIOD_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<3)); (RCC->AHB1RSTR &= ~(1<<3));}while(0) 
+#define GPIOE_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<4)); (RCC->AHB1RSTR &= ~(1<<4));}while(0) 
+#define GPIOF_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<5)); (RCC->AHB1RSTR &= ~(1<<5));}while(0) 
+#define GPIOG_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<6)); (RCC->AHB1RSTR &= ~(1<<6));}while(0) 
+#define GPIOH_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<7)); (RCC->AHB1RSTR &= ~(1<<7));}while(0) 
+#define GPIOI_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<8)); (RCC->AHB1RSTR &= ~(1<<8));}while(0) 
+#define GPIOJ_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<9)); (RCC->AHB1RSTR &= ~(1<<9));}while(0) 
+#define GPIOK_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<10)); (RCC->AHB1RSTR &= ~(1<<10));}while(0) 
+
+//GPIO useful macro
+//
+#define GPIO_BASEADDR_TO_CODE(x)    ((x==GPIOA)?0:\
+                                    (x==GPIOB)?1:\
+                                    (x==GPIOC)?2:\
+                                    (x==GPIOD)?3:\
+                                    (x==GPIOE)?4:\
+                                    (x==GPIOF)?5:\
+                                    (x==GPIOG)?6:\
+                                    (x==GPIOH)?7:\
+                                    (x==GPIOI)?8:\
+                                    (x==GPIOJ)?9:\
+                                    (x==GPIOK)?10:0)
+
+
+//some generic marcos
+
+#define ENABLE              1
+#define DISABLE             0
+#define SET                 ENABLE
+#define RESET               DISABLE
+#define GPIO_PIN_SET        SET
+#define GPIO_PIN_RESET      RESET
+
+
+
+
+/****
+ * IRQ(Interrupt Request) Number of STM32F746x MCU
+ * NOTE: update these macros with valid values according to MCU
+ * Vector table: 10.1.2
+ */
+
+// EXTI0~15
+#define IRQ_NO_EXTI0        6
+#define IRQ_NO_EXTI1        7
+#define IRQ_NO_EXTI2        8
+#define IRQ_NO_EXTI3        9
+#define IRQ_NO_EXTI4        10
+#define IRQ_NO_EXTI9_5      23
+#define IRQ_NO_EXTI15_10    40
+
+//Macros for all possible Interrupt priority
+#define NVIC_IRQ_RRI0       0
+#define NVIC_IRQ_RRI15      15
+                             //include
+#include "stm32f746xx_gpio.h"
+
+
+/* INC_STM32F746XX_H_ */
+#endif 
