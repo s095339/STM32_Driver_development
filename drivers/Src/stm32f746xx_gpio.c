@@ -438,4 +438,13 @@ void GPIO_IRQPriorityConfig(uint8_t IRQNumber, uint8_t IRQPriority)
 
     *(NVIC_PR_BASE_ADDR + iprx) |= (IRQPriority << shift_amount);
 }
-void GPIO_IRQCHandler(uint8_t PinNumber);
+void GPIO_IRQHandling(uint8_t PinNumber)
+{
+    //clear the exti pr register (pending register) to the pin number
+    // UM 11.9.6
+    if( EXTI->PR & (1<<PinNumber) )
+    {
+        //clear
+        EXTI->PR |= (1<<PinNumber);// 寫1進去來clear UM就是這樣說的
+    }
+}
