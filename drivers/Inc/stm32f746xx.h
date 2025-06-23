@@ -11,7 +11,7 @@
 
 #include <stdint.h>
 
-/************************START: Processor Specific Details *******************/
+/************************　 Processor Specific Details *******************/
 //ARM® Cortex®-M7 Devices Generic user guide ch4.2 
 
 //interrupt Set-enable Registers
@@ -39,7 +39,7 @@
 #define NO_PR_BITS_IMPLEMENTED  4 
 //根據UM 10.1 NVIC features 
 //雖然cortex-M7的processor提供了8bits的中段優先級，但是STM32的這個microprocessor只implement了4bits
-/*****************************************************8 *******************/
+/*********************************************Micro Controller**********************************************/
 /*
 * Base addresses of Glash and SRAM memories based on User Manual
 */
