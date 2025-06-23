@@ -291,6 +291,12 @@ typedef struct{
 #define UART5_PLCK_EN()  (RCC->APB1ENR |=(1<<20))
 #define UART7_PLCK_EN()  (RCC->APB1ENR |=(1<<30))
 #define UART8_PLCK_EN()  (RCC->APB1ENR |=(1<<31))
+
+/*
+* Clock Enable Macros for Basic Timer (Tim6,Tim7)
+*/
+#define TIMER6_PLCK_EN()  (RCC->APB1ENR |=(1<<4))
+#define TIMER7_PLCK_EN()  (RCC->APB1ENR |=(1<<5))
 /*
 * Clock Enable Macros for SYSCFG peripheral
 */
@@ -349,6 +355,13 @@ typedef struct{
 #define UART5_PLCK_DI()  (RCC->APB1ENR &= ~(1<<20))
 #define UART7_PLCK_DI()  (RCC->APB1ENR &= ~(1<<30))
 #define UART8_PLCK_DI()  (RCC->APB1ENR &= ~(1<<31))
+
+/*
+* Clock Enable Macros for Basic Timer (Tim6,Tim7)
+*/
+#define TIMER6_PLCK_DI()  (RCC->APB1ENR &= ~(1<<4))
+#define TIMER7_PLCK_DI()  (RCC->APB1ENR &= ~(1<<5))
+
 
 /*
 * Clock Disable Macros for SYSCFG peripheral
@@ -417,9 +430,21 @@ typedef struct{
 //Macros for all possible Interrupt priority
 #define NVIC_IRQ_RRI0       0
 #define NVIC_IRQ_RRI15      15
-                             //include
+
+
+
+
+//interrupt handling
+
+void Global_IRQITConfig(uint8_t IRQNumber, uint8_t EnorDi);
+
+void Global_IRQPriorityConfig(uint8_t IRQNumber, uint8_t IRQPriority);
+
+
+
+
+//include
 #include "stm32f746xx_gpio.h"
-
-
+#include "basic_timer.h"
 /* INC_STM32F746XX_H_ */
 #endif 
