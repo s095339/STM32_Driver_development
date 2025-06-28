@@ -213,7 +213,9 @@ void SPI_SendData(SPI_Handle_t *pSPIHandle, uint8_t *pTxBuffer, uint32_t len)
         }else{
             //8bits
         
-            pSPIHandle->pSPIx->DR = *pTxBuffer;
+            *((uint8_t*)&(pSPIHandle->pSPIx->DR)) = *((uint8_t*)pTxBuffer);
+            //必須要把DR給轉型成uint8_t 否則會有dataPACKING的問題 導致系統把這個當作16bits 傳出去
+
             len--;
             pTxBuffer++;
         }
