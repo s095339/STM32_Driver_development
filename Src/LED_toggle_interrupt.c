@@ -11,7 +11,7 @@ static void delay(void)
 {
 	for(uint32_t i = 0; i<500000; i++);
 }
-int main(void)
+int main1(void)
 {
 	// configurate GPIO
 	GPIO_Handle_t gpio_led;
@@ -54,8 +54,9 @@ int main(void)
 	}
 	return 0;
 }
-
+/*
 void EXTI15_10_IRQHandler(void){
 	GPIO_IRQHandling(GPIO_PIN_NO_11);// clear the pending register
 	GPIO_ToggleOutputPin(GPIOI, GPIO_PIN_NO_1);
 }
+*/
