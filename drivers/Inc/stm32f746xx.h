@@ -10,7 +10,7 @@
 
 
 #include <stdint.h>
-
+#include <stddef.h>
 /************************　 Processor Specific Details *******************/
 //ARM® Cortex®-M7 Devices Generic user guide ch4.2 
 
@@ -220,6 +220,91 @@ typedef struct{
     volatile uint32_t CMPCR;
 }SYSCFG_RegDef_t;
 
+/*
+SPI and I2S register
+*/
+// SPIx CR1
+enum {
+    SPIx_CR1_CPHA     = 0,
+    SPIx_CR1_CPOL     = 1,
+    SPIx_CR1_MSTR     = 2,
+    SPIx_CR1_BR       = 3,  // BR[2:0] from bit 3 to 5
+    SPIx_CR1_SPE      = 6,
+    SPIx_CR1_LSBFIRST = 7,
+    SPIx_CR1_SSI      = 8,
+    SPIx_CR1_SSM      = 9,
+    SPIx_CR1_RXONLY   = 10,
+    SPIx_CR1_CRCL     = 11,
+    SPIx_CR1_CRCNEXT  = 12,
+    SPIx_CR1_CRCEN    = 13,
+    SPIx_CR1_BIDIOE   = 14,
+    SPIx_CR1_BIDIMODE = 15
+};
+// SPIx_CR2
+enum {
+    SPIx_CR2_RXDMAEN  = 0,
+    SPIx_CR2_TXDMAEN  = 1,
+    SPIx_CR2_SSOE     = 2,
+    SPIx_CR2_NSSP     = 3,
+    SPIx_CR2_FRF      = 4,
+    SPIx_CR2_ERRIE    = 5,
+    SPIx_CR2_RXNEIE   = 6,
+    SPIx_CR2_TXEIE    = 7,
+    SPIx_CR2_DS       = 8,  // DS[3:0] 從 bit 8~11
+    SPIx_CR2_FRXTH    = 12,
+    SPIx_CR2_LDMA_RX  = 13,
+    SPIx_CR2_LDMA_TX  = 14
+};
+
+//SPIx_SR
+enum {
+    SPIx_SR_RXNE      = 0,
+    SPIx_SR_TXE       = 1,
+    SPIx_SR_CHSIDE    = 2,
+    SPIx_SR_UDR       = 3,
+    SPIx_SR_CRCERR    = 4,
+    SPIx_SR_MODF      = 5,
+    SPIx_SR_OVR       = 6,
+    SPIx_SR_BSY       = 7,
+    SPIx_SR_FRE       = 8,
+    SPIx_SR_FRLVL     = 9,  // FRLVL[1:0] 在 bit 9~10
+    SPIx_SR_FTLVL     = 11  // FTLVL[1:0] 在 bit 11~12
+};
+typedef struct {
+    volatile uint32_t CR1;
+    // |15:BIDIMODE|14:BIDIOE|13:CRCEN|12:CRCNEXT|11:CRCL|10:RXONLY|9:SSM|8:SSI|
+    // |7:LSBFIRST|6:SPE|5-3:BR[2:0]|2:MSTR|1:CPOL|0:CPHA|
+
+    volatile uint32_t CR2;
+    // |15-14:Reserved|13:LDMA_TX|12:LDMA_RX|11-10:FRXTH|9-8:DS[3:0]|7:TXEIE|
+    // |6:RXNEIE|5:ERRIE|4:FRF|3:NSSP|2:SSOE|1:TXDMAEN|0:RXDMAEN|
+
+    volatile uint32_t SR;
+    // |15-11:Reserved|10:FTLVL[1:0]|8-9:FRLVL[1:0]|7:FRE|6:BSY|5:OVR|
+    // |4:MODF|3:CRCERR|2:UDR|1:CHSIDE|0:RXNE|
+
+    volatile uint32_t DR;
+    // |15-0:DR[15:0]|
+
+    volatile uint32_t CRCPR;
+    // |15-0:CRCPOLY[15:0]|
+
+    volatile uint32_t RXCRCR;
+    // |15-0:RXCRC[15:0]|
+
+    volatile uint32_t TXCRCR;
+    // |15-0:TXCRC[15:0]|
+
+    volatile uint32_t I2SCFGR;
+    // |15:ASTRTEN|14:I2SMOD|13:I2SE|12:I2SCFG[1:0]|10:PCMSYNC|9:I2SSTD|
+    // |8:CKPOL|7:DATLEN[1:0]|5:CHLEN|
+
+    volatile uint32_t I2SPR;
+    // |15-9:Reserved|8:MCKOE|7:ODD|6-0:I2SDIV[7:0]|
+
+} SPI_RegDef_t;
+
+
 /****************************Peripheral definitions **************************/
 
 
@@ -241,7 +326,12 @@ typedef struct{
 
 #define SYSCFG ((SYSCFG_RegDef_t *)SYSCFG_BASEADDR)
 
-
+#define SPI1        ((SPI_RegDef_t *)SPI1_BASEADDR)
+#define SPI2I2S2    ((SPI_RegDef_t *)SPI2_I2S2_BASEADDR)
+#define SPI3I2S3    ((SPI_RegDef_t *)SPI3_I2S3_BASEADDR)
+#define SPI4        ((SPI_RegDef_t *)SPI4_BASEADDR)
+#define SPI5        ((SPI_RegDef_t *)SPI5_BASEADDR)
+#define SPI6        ((SPI_RegDef_t *)SPI6_BASEADDR)
 /*
 * Clock Enable Macros for GPIOx peripherals
 */
@@ -301,7 +391,7 @@ typedef struct{
 
 
 /*
-* Clock Disable Macros for GPIOx peripherals
+* Clock Disable Macros for peripheral
 */
 
 #define GPIOA_PLCK_DI()   (RCC->AHB1ENR &= ~(1<<0))  
@@ -357,9 +447,10 @@ typedef struct{
 
 
 /*
- Macros to reset GPIOx peripherals
+ Macros to reset peripherals
 */
 
+//GPIO reset
 #define GPIOA_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<0)); (RCC->AHB1RSTR &= ~(1<<0));}while(0) //這樣就可以做兩件事情 做一次 因為while(0)
 #define GPIOB_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<1)); (RCC->AHB1RSTR &= ~(1<<1));}while(0) 
 #define GPIOC_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<2)); (RCC->AHB1RSTR &= ~(1<<2));}while(0) 
@@ -372,6 +463,14 @@ typedef struct{
 #define GPIOJ_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<9)); (RCC->AHB1RSTR &= ~(1<<9));}while(0) 
 #define GPIOK_REG_RESET()  do{ (RCC->AHB1RSTR |=(1<<10)); (RCC->AHB1RSTR &= ~(1<<10));}while(0) 
 
+//spi reset
+#define SPI1_REG_RESET()   do{ (RCC->APB2RSTR |=(1<<12) ); (RCC->APB2RSTR &= ~(1<<12) ); }while(0)
+#define SPI4_REG_RESET()   do{ (RCC->APB2RSTR |=(1<<13) ); (RCC->APB2RSTR &= ~(1<<13) ); }while(0)
+#define SPI5_REG_RESET()   do{ (RCC->APB2RSTR |=(1<<20) ); (RCC->APB2RSTR &= ~(1<<20) ); }while(0)
+#define SPI6_REG_RESET()   do{ (RCC->APB2RSTR |=(1<<21) ); (RCC->APB2RSTR &= ~(1<<21) ); }while(0)
+
+#define SPI2_REG_RESET()   do{ (RCC->APB1RSTR |=(1<<14) ); (RCC->APB1RSTR &= ~(1<<14) ); }while(0)
+#define SPI3_REG_RESET()   do{ (RCC->APB1RSTR |=(1<<15) ); (RCC->APB1RSTR &= ~(1<<15) ); }while(0)
 //GPIO useful macro
 //
 #define GPIO_BASEADDR_TO_CODE(x)    ((x==GPIOA)?0:\
@@ -395,7 +494,8 @@ typedef struct{
 #define RESET               DISABLE
 #define GPIO_PIN_SET        SET
 #define GPIO_PIN_RESET      RESET
-
+#define FLAG_RESET          RESET
+#define FLAG_SET            SET
 
 
 
@@ -414,12 +514,20 @@ typedef struct{
 #define IRQ_NO_EXTI9_5      23
 #define IRQ_NO_EXTI15_10    40
 
+// SPI
+#define IRQ_NO_SPI1         35
+#define IRQ_NO_SPI2         36
+#define IRQ_NO_SPI3         51
+#define IRQ_NO_SPI4         84  
+#define IRQ_NO_SPI5         85
+#define IRQ_NO_SPI6         86
+
 //Macros for all possible Interrupt priority
 #define NVIC_IRQ_RRI0       0
 #define NVIC_IRQ_RRI15      15
                              //include
 #include "stm32f746xx_gpio.h"
-
+#include "stm32f746xx_spi.h"
 
 /* INC_STM32F746XX_H_ */
 #endif 

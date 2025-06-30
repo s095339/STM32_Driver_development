@@ -132,6 +132,8 @@ void GPIO_Init(GPIO_Handle_t *pGPIOHandle)
     //使用者利用gpio_handle_t的結構，設定想要的GPIO功能跟pin腳，送到Init
     //init這邊幫他做初始化
     uint32_t temp = 0;
+    //Enable the peripheral clock
+    GPIO_PeriClockControl(pGPIOHandle->pGPIOx, ENABLE);
     //1. configure the mode of gpio pin ch6.4.1
     if(pGPIOHandle->GPIO_PinConfig.GPIO_PinMode <= GPIO_MODE_ANALOG)
     {
@@ -203,7 +205,7 @@ void GPIO_Init(GPIO_Handle_t *pGPIOHandle)
     //5. configure the alt functionality  ch6.4.9 and 6.4.10
     if(pGPIOHandle->GPIO_PinConfig.GPIO_PinMode == GPIO_MODE_ALTFN)
     {
-        temp = (pGPIOHandle->GPIO_PinConfig.GPIO_PinAltFunMode <<  (4* (pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber &= 0x07 )));
+        temp = (pGPIOHandle->GPIO_PinConfig.GPIO_PinAltFunMode <<  (4* (pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber & 0x07 )));
         if(pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber >7)
         {
             pGPIOHandle->pGPIOx->AFR[1] &= ~(0xF<<pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber*4); //clear the target bit
