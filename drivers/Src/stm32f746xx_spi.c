@@ -127,6 +127,10 @@ void SPI_Init(SPI_Handle_t *pSPIHandle)
 
     //4. SPI_DS;
     tempreg_CR2 |= (pSPIHandle->SPIConfig.SPI_DS) << SPIx_CR2_DS;
+    if(pSPIHandle->SPIConfig.SPI_DS<8)
+    {
+        tempreg_CR2 |= 1 <<  SPIx_CR2_FRXTH;
+    }
     pSPIHandle->pSPIx->CR2 = tempreg_CR2;
 }
  /***************************************************
@@ -404,8 +408,7 @@ void SPI_SSOEConfig(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi){
     }
 }
 
-
- /***************************************************
+/***************************************************
  * @fn                      - 
  * 
  * @brief                   
@@ -418,7 +421,170 @@ void SPI_SSOEConfig(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi){
  * 
  * @note                    - none
  * */
-void SPI_ReceiveData(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t len);
+void SPI_ClearOVRFlag(SPI_Handle_t * pSPIHandle)
+{
+    uint8_t temp;
+    temp = pSPIHandle->pSPIx->DR;
+    temp = pSPIHandle->pSPIx->SR;
+    (void)temp; //只是為了把 warning unused variable清掉
+}
+/***************************************************
+ * @fn                      - 
+ * 
+ * @brief                   
+ * 
+ * @param[in]              
+ * @param[in]               
+ *
+ * 
+ * @return                  - none
+ * 
+ * @note                    - none
+ * */
+void SPI_CloseTransmission(SPI_Handle_t *pSPIHandle)
+{
+    pSPIHandle->pSPIx->CR2 &= ~(1<<SPIx_CR2_TXEIE);
+    pSPIHandle->pTxBuffer = NULL;// NULL要 include <stddef.h>
+    pSPIHandle->TxLen = 0;
+    pSPIHandle->TxState = SPI_READY;
+}
+/***************************************************
+ * @fn                      - 
+ * 
+ * @brief                   
+ * 
+ * @param[in]              
+ * @param[in]               
+ *
+ * 
+ * @return                  - none
+ * 
+ * @note                    - none
+ * */
+void SPI_CloseReception(SPI_Handle_t *pSPIHandle)
+{
+    pSPIHandle->pSPIx->CR2 &= ~(1<<SPIx_CR2_RXNEIE);
+    pSPIHandle->pRxBuffer = NULL;// NULL要 include <stddef.h>
+    pSPIHandle->RxLen = 0;
+    pSPIHandle->RxState = SPI_READY;
+}
+
+
+/*
+* application callback
+*/
+
+/***************************************************
+ * @fn                      - SPI_ApplicationEventCallback
+ * 
+ * @brief                   user(application) implemented callback function
+ * 
+ * @param[in]              
+ * @param[in]               
+ *
+ * 
+ * @return                  - none
+ * 
+ * @note                    - none
+ * */
+__attribute__((weak)) void SPI_ApplicationEventCallback(SPI_Handle_t *pSPIHandle, uint8_t AppEv)
+{
+    /**
+     * @brief this funciton has to be implemented by application(main.c).  
+     * so to convert this funciton into weak function , use __attribute__((weak))
+     * this is a gcc __attrivute__((weak))
+     * if application doesn't implemented this application, then this callback funciton will be call
+     */
+
+     // this is a weak implementataion. the application my override this function
+
+     
+}
+
+//helper function
+//static 可以用來表示private function 讓這個function不會被外面的人call
+static void spi_ovr_err_interrupt_handle(SPI_Handle_t *pSPIHandle)
+{
+    uint8_t temp;
+    //1. clear the ovr flag (User Manual  32.5.11 SPI error flags, Overrun flag (OVR))
+    if(pSPIHandle->TxState != SPI_BUSY_IN_TX)
+    {
+        //Clear the OVR bit by a read access to the SPI_DR register followed by a read access to the SPI_SR register. (accroding to User Manal)
+        temp = pSPIHandle->pSPIx->DR;
+        temp = pSPIHandle->pSPIx->SR;
+    }
+    (void)temp;
+    //2. inform the application
+    SPI_ApplicationEventCallback(pSPIHandle, SPI_EVENT_OVR_ERR);
+}
+static void spi_rxne_interrupt_handle(SPI_Handle_t *pSPIHandle)
+{
+    uint32_t temp_DS = pSPIHandle->pSPIx->CR2 >> SPIx_CR2_DS & 0xF ;
+
+
+        if( temp_DS>7 ){
+            //16bits
+            
+            //load the data from DR to Rxbuffer address
+
+            *((uint16_t*)pSPIHandle->pRxBuffer) = pSPIHandle->pSPIx->DR; 
+            pSPIHandle->RxLen--;
+            pSPIHandle->RxLen--; //因為送出去2個byte
+            pSPIHandle->pRxBuffer+=2; 
+        }else{
+            //8bits
+        
+            *(pSPIHandle->pRxBuffer) = *((uint8_t*)&(pSPIHandle->pSPIx->DR));
+            //必須要把DR給轉型成uint8_t 否則會有dataPACKING的問題 導致系統把這個當作16bits 傳出去
+
+            pSPIHandle->RxLen--;
+            pSPIHandle->pRxBuffer++;
+        }
+
+
+    if(pSPIHandle->RxLen == 0)
+    {
+        //TxLen is zero, so close the spi transmission and inform the application that
+        //TX is over
+        //this prevents interrupt form setting up fo TXE flag
+        SPI_CloseReception(pSPIHandle);
+        SPI_ApplicationEventCallback(pSPIHandle, SPI_EVENT_RX_CMPLT);
+        
+    }
+    //如果len不等於0 就代表仍有資料沒傳完 等tx fifo空了之後會再產生interrupt
+}
+static void spi_txe_interrupt_handle(SPI_Handle_t *pSPIHandle)
+{
+    uint32_t temp_DS = pSPIHandle->pSPIx->CR2 >> SPIx_CR2_DS & 0xF ;
+    if( temp_DS>8 ){
+        //16bits
+        pSPIHandle->pSPIx->DR = *((uint16_t*)pSPIHandle->pTxBuffer);
+        pSPIHandle->TxLen--;
+        pSPIHandle->TxLen--; //因為送出去2個byte
+        (uint16_t*)pSPIHandle->pTxBuffer++; //這樣原本的pTxBuffer就會等同於+2
+    }else{
+        //8bits
+    
+        *((uint8_t*)&(pSPIHandle->pSPIx->DR)) = *((uint8_t*)pSPIHandle->pTxBuffer);
+        //必須要把DR給轉型成uint8_t 否則會有dataPACKING的問題 導致系統把這個當作16bits 傳出去
+
+        pSPIHandle->TxLen--;
+        pSPIHandle->pTxBuffer++;
+    }
+
+    if(pSPIHandle->TxLen == 0)
+    {
+        //TxLen is zero, so close the spi transmission and inform the application that
+        //TX is over
+        //this prevents interrupt form setting up fo TXE flag
+        SPI_CloseTransmission(pSPIHandle);
+        SPI_ApplicationEventCallback(pSPIHandle, SPI_EVENT_TX_CMPLT);
+
+    }
+    //如果len不等於0 就代表仍有資料沒傳完 等tx fifo空了之後會再產生interrupt
+
+}
+
 
 /*
 ISR handling
@@ -521,4 +687,37 @@ void SPI_IRQPriorityConfig(uint8_t IRQNumber, uint8_t IRQPriority)
  * 
  * @note                    - none
  * */
-void SPI_IRQHandling(SPI_Handle_t *pHandle);
+void SPI_IRQHandling(SPI_Handle_t *pHandle)
+{
+    uint8_t temp1, temp2;
+
+    // TX Empty interrupt
+    temp1 = pHandle->pSPIx->SR & (1 << SPIx_SR_TXE);
+    temp2 = pHandle->pSPIx->CR2 & (1 << SPIx_CR2_TXEIE);
+    //如果TXE滿了 且TXEIE 也就是TX的中斷有被開啟 就代表現在這個中斷是TXE 的中斷
+    if(temp1 && temp2)
+    {
+        spi_txe_interrupt_handle(pHandle);
+
+    }
+
+    // Rx not Empty interrupt
+    temp1 = pHandle->pSPIx->SR & (1 << SPIx_SR_RXNE);
+    temp2 = pHandle->pSPIx->CR2 & (1 << SPIx_CR2_RXNEIE);
+    //如果RXE滿了 且RXEIE 也就是RX的中斷有被開啟 就代表現在這個中斷是TXE 的中斷
+    if(temp1 && temp2)
+    {
+        spi_rxne_interrupt_handle(pHandle);
+        
+    }
+
+    // check for ovr flag
+    temp1 = pHandle->pSPIx->SR & (1 << SPIx_SR_OVR);
+    temp2 = pHandle->pSPIx->CR2 & (1 << SPIx_CR2_ERRIE);
+    if(temp1 && temp2)
+    {
+        spi_ovr_err_interrupt_handle(pHandle);
+        
+    }
+    //inplement other error interrupt
+}
