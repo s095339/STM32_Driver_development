@@ -222,6 +222,114 @@ void SPI_SendData(SPI_Handle_t *pSPIHandle, uint8_t *pTxBuffer, uint32_t len)
     } 
 }
 
+
+ /***************************************************
+ * @fn                      - 
+ * 
+ * @brief                   
+ * 
+ * @param[in]              
+ * @param[in]               
+ *
+ * 
+ * @return                  - none
+ * 
+ * @note                    - none
+ * */
+void SPI_ReceiveData(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t len){
+    while(len>0)
+    {
+        //1. wait until RXNE is set
+        while(SPI_GetFlagStatus(pSPIHandle, SPI_RXNE_FLAG) == FLAG_RESET);
+        //2. check the DS bit in CR2
+        // TODO: 只先做8bit跟16bit的
+        uint32_t temp_DS = pSPIHandle->pSPIx->CR2 >> SPIx_CR2_DS & 0xF ;
+
+
+        if( temp_DS>7 ){
+            //16bits
+            
+            //load the data from DR to Rxbuffer address
+
+            *((uint16_t*)pRxBuffer) = pSPIHandle->pSPIx->DR; 
+            len--;
+            len--; //因為送出去2個byte
+            (uint16_t*)pRxBuffer++; //這樣原本的pTxBuffer就會等同於+2
+        }else{
+            //8bits
+        
+            *pRxBuffer = *((uint8_t*)&(pSPIHandle->pSPIx->DR));
+            //必須要把DR給轉型成uint8_t 否則會有dataPACKING的問題 導致系統把這個當作16bits 傳出去
+
+            len--;
+            pRxBuffer++;
+        }
+    } 
+}
+
+ /***************************************************
+ * @fn                      - SPI_SendDataIT
+ * 
+ * @brief                   
+ * 
+ * @param[in]              
+ * @param[in]               
+ *
+ * 
+ * @return                  - none
+ * 
+ * @note                    - Non-blocking API
+ * */
+uint8_t SPI_SendDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pTxBuffer, uint32_t len)
+{   
+    uint8_t state = pSPIHandle->TxState;
+    if(state!=SPI_BUSY_IN_TX)
+    {
+        //1. Save the Tx buffer address and Len information in some global variables
+        pSPIHandle->pTxBuffer = pTxBuffer;
+        pSPIHandle->TxLen = len;
+        //2. Mark the SPI state as busy in transmission so taht no other code can take over same SPI peripheral until transmission is over
+        pSPIHandle->TxState = SPI_BUSY_IN_TX;
+
+        //3. Enable the TXEIE control bit to get interrupt whenever TXE flag is set in SR
+        pSPIHandle->pSPIx->CR2 |= (1<<SPIx_CR2_TXEIE);//(TX Empty interrupt enable)
+
+    }
+
+    return state;
+}
+
+ /***************************************************
+ * @fn                      - 
+ * 
+ * @brief                   
+ * 
+ * @param[in]              
+ * @param[in]               
+ *
+ * 
+ * @return                  - none
+ * 
+ * @note                    - none
+ * */
+uint8_t SPI_ReceiveDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t len)
+{
+    uint8_t state = pSPIHandle->TxState;
+    if(state!=SPI_BUSY_IN_RX)
+    {
+        //1. Save the Tx buffer address and Len information in some global variables
+        pSPIHandle->pRxBuffer = pRxBuffer;
+        pSPIHandle->RxLen = len;
+        //2. Mark the SPI state as busy in transmission so taht no other code can take over same SPI peripheral until transmission is over
+        pSPIHandle->RxState = SPI_BUSY_IN_RX;
+
+        //3. Enable the TXEIE control bit to get interrupt whenever TXE flag is set in SR
+        pSPIHandle->pSPIx->CR2 |= (1<<SPIx_CR2_RXNEIE);//(TX Empty interrupt enable)
+
+    }
+
+    return state;
+}
 // other API
 /***************************************************
  * @fn                      - 
