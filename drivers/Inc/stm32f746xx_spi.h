@@ -24,8 +24,14 @@ typedef struct
 
 //SPI and I2S register
 typedef struct {
-    SPI_RegDef_t *pSPIx;
-    SPI_Config_t SPIConfig;
+    SPI_RegDef_t    *pSPIx;
+    SPI_Config_t    SPIConfig;
+    uint8_t         *pTxBuffer;     //store the app. tx buffer address
+    uint8_t         *pRxBuffer;     //stort the app. tx buffer address
+    uint8_t         TxLen;          
+    uint8_t         RxLen;                  
+    uint8_t         TxState;
+    uint8_t         RxState;
 }SPI_Handle_t;
 
 
@@ -106,6 +112,17 @@ typedef struct {
 #define SPI_OVR_FLAG                        (1 << SPIx_SR_OVR)
 #define SPI_BSY_FLAG                        (1 << SPIx_SR_BSY)
 #define SPI_FRE_FLAG                        (1 << SPIx_SR_FRE)
+
+//SPI application state
+#define SPI_READY                           0
+#define SPI_BUSY_IN_RX                      1
+#define SPI_BUSY_IN_TX                      2
+
+//possible SPI application events
+#define SPI_EVENT_TX_CMPLT                  1
+#define SPI_EVENT_RX_CMPLT                  2
+#define SPI_EVENT_OVR_ERR                   3
+#define SPI_EVENT_CRC_ERR                   4
 /***************************************************
  *                      APIs 
  ***************************************************/
@@ -123,8 +140,12 @@ void SPI_DeInit(SPI_Handle_t *pSPIHandle);
 /*
 Data Send and Receive
 */
+//blocking-based
 void SPI_SendData(SPI_Handle_t *pSPIHandle, uint8_t *pTxBuffer, uint32_t len);
 void SPI_ReceiveData(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t len);
+//non-blocking(Interrupt-based)
+uint8_t SPI_SendDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pTxBuffer, uint32_t len);
+uint8_t SPI_ReceiveDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t len);
 
 
 /*
@@ -134,6 +155,13 @@ void SPI_PeripheralControl(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi);
 void SPI_SSIConfig(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi);
 void SPI_SSOEConfig(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi);
 uint8_t SPI_GetFlagStatus(SPI_Handle_t * pSPIHandle, uint32_t FlagName);
+void SPI_ClearOVRFlag(SPI_Handle_t * pSPIHandle);
+void SPI_CloseTransmission(SPI_Handle_t *pSPIHandle);
+void SPI_CloseReception(SPI_Handle_t *pSPIHandle);
+/*
+* application callback
+*/
+void SPI_ApplicationEventCallback(SPI_Handle_t *pSPIHandle, uint8_t AppEv);
 /*
 ISR handling
 */
