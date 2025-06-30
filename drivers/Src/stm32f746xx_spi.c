@@ -355,7 +355,19 @@ void SPI_PeripheralControl(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi)
 
     }
 }
-
+/***************************************************
+ * @fn                      - 
+ * 
+ * @brief                   
+ * 
+ * @param[in]              
+ * @param[in]               
+ *
+ * 
+ * @return                  - none
+ * 
+ * @note                    - none
+ * */
 void SPI_SSIConfig(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi){
     
     if(EnOrDi == ENABLE)
@@ -368,7 +380,19 @@ void SPI_SSIConfig(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi){
     }
 
 }
-
+/***************************************************
+ * @fn                      - 
+ * 
+ * @brief                   
+ * 
+ * @param[in]              
+ * @param[in]               
+ *
+ * 
+ * @return                  - none
+ * 
+ * @note                    - none
+ * */
 void SPI_SSOEConfig(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi){
     if(EnOrDi == ENABLE)
     {
