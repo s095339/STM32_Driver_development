@@ -10,7 +10,7 @@
 
 
 #include <stdint.h>
-
+#include <stddef.h>
 /************************　 Processor Specific Details *******************/
 //ARM® Cortex®-M7 Devices Generic user guide ch4.2 
 
@@ -515,7 +515,13 @@ typedef struct {
 #define IRQ_NO_EXTI15_10    40
 
 // SPI
-#define IRQ_NO_SPI1
+#define IRQ_NO_SPI1         35
+#define IRQ_NO_SPI2         36
+#define IRQ_NO_SPI3         51
+#define IRQ_NO_SPI4         84  
+#define IRQ_NO_SPI5         85
+#define IRQ_NO_SPI6         86
+
 //Macros for all possible Interrupt priority
 #define NVIC_IRQ_RRI0       0
 #define NVIC_IRQ_RRI15      15
