@@ -117,7 +117,7 @@ int main(void)
 
 	//SPI_SSIConfig(&SPI2handle,ENABLE);
 
-	SPI_SSOEConfig(&SPI2handle, ENABLE);
+	SPI_SSOEConfig(SPI2I2S2, ENABLE);
 
 	/*
 	* making SSOE 1 does NSS output enable.
@@ -138,7 +138,7 @@ int main(void)
 		GPIO_IRQITConfig(IRQ_NO_EXTI2,DISABLE);
 
 		//enable the SPI2 peripheral
-		SPI_PeripheralControl(&SPI2handle,ENABLE);
+		SPI_PeripheralControl(SPI2I2S2,ENABLE);
 
 
 		while(!rcvStop)
@@ -150,10 +150,10 @@ int main(void)
 
 
 		// confirm SPI is not busy
-		while( SPI_GetFlagStatus(&SPI2handle,SPI_BSY_FLAG) );
+		while( SPI_GetFlagStatus(SPI2I2S2,SPI_BSY_FLAG) );
 
 		//Disable the SPI2 peripheral
-		SPI_PeripheralControl(&SPI2handle,DISABLE);
+		SPI_PeripheralControl(SPI2I2S2,DISABLE);
 		//initialise_monitor_handles();
 		//printf("Rcvd data = %s\n",RcvBuff);
 
