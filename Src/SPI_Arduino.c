@@ -20,7 +20,7 @@ PB14 --> MISO
 PB15 --> MOSI
 
 */
-/*
+
 static void SPI2_GPIO_Inits(void){
 	GPIO_Handle_t SPIPinsB;
 	SPIPinsB.pGPIOx = GPIOB;
@@ -54,7 +54,7 @@ static void SPI2_GPIO_Inits(void){
 }
 
 int interrupt_flag = 0;
-int mainnn(){
+int main__spi(){
 
 
 	GPIO_Handle_t btn;
@@ -90,26 +90,36 @@ int mainnn(){
 
 	//SPI_SSIConfig(&SPI2handle,ENABLE);
 	
-	SPI_SSOEConfig(&SPI2handle, ENABLE);
+	SPI_SSOEConfig(SPI2I2S2, ENABLE);
 	
+	SPI_PeripheralControl(SPI2I2S2, ENABLE);
 
+	//first send length info
+	uint8_t dataLen = strlen(user_data);
+	SPI_SendData(SPI2I2S2, &dataLen,1);
+	SPI_SendData(SPI2I2S2, (uint8_t*)user_data, dataLen);
+
+	//confirm SPI is not busy
+	while(SPI_GetFlagStatus(SPI2I2S2, SPI_BSY_FLAG));
+	interrupt_flag = 0;
+	SPI_PeripheralControl(SPI2I2S2, DISABLE);
 	
 
 	while(1){
-
+		
 		if(interrupt_flag)
 		{
-			SPI_PeripheralControl(&SPI2handle, ENABLE);
+			SPI_PeripheralControl(SPI2I2S2, ENABLE);
 
 			//first send length info
 			uint8_t dataLen = strlen(user_data);
-			SPI_SendData(&SPI2handle, &dataLen,1);
-			SPI_SendData(&SPI2handle, (uint8_t*)user_data, dataLen);
+			SPI_SendData(SPI2I2S2, &dataLen,1);
+			SPI_SendData(SPI2I2S2, (uint8_t*)user_data, dataLen);
 
 			//confirm SPI is not busy
-			while(SPI_GetFlagStatus(&SPI2handle, SPI_BSY_FLAG));
+			while(SPI_GetFlagStatus(SPI2I2S2, SPI_BSY_FLAG));
 			interrupt_flag = 0;
-			SPI_PeripheralControl(&SPI2handle, DISABLE);
+			SPI_PeripheralControl(SPI2I2S2, DISABLE);
 		}
 	}
 	return 0;
@@ -120,4 +130,4 @@ void EXTI15_10_IRQHandler(void){
 	GPIO_IRQHandling(GPIO_PIN_NO_11);// clear the pending register
 	interrupt_flag = 1;
 }
-*/
+

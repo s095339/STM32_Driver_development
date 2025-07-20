@@ -171,14 +171,6 @@ void SPI_DeInit(SPI_Handle_t *pSPIHandle)
 
 }
 
-uint8_t SPI_GetFlagStatus(SPI_Handle_t * pSPIHandle, uint32_t FlagName)
-{
-    if(pSPIHandle->pSPIx->SR & FlagName)// FlagName 其實就是 bit mask
-    {
-        return FLAG_SET;
-    }
-    return FLAG_RESET;
-}
 
 
 /*
@@ -198,26 +190,26 @@ Data Send and Receive
  * 
  * @note                    - This is the blocking call
  * */
-void SPI_SendData(SPI_Handle_t *pSPIHandle, uint8_t *pTxBuffer, uint32_t len)
+void SPI_SendData(SPI_RegDef_t *pSPIx, uint8_t *pTxBuffer, uint32_t len)
 {
     //blocking API
     while(len>0)
     {
         //1. wait until TXE is set
-        while(SPI_GetFlagStatus(pSPIHandle, SPI_TXE_FLAG) == FLAG_RESET);
+        while(SPI_GetFlagStatus(pSPIx, SPI_TXE_FLAG) == FLAG_RESET);
         //2. check the DS bit in CR2
         // TODO: 只先做8bit跟16bit的
-        uint32_t temp_DS = pSPIHandle->pSPIx->CR2 >> SPIx_CR2_DS & 0xF ;
+        uint32_t temp_DS = pSPIx->CR2 >> SPIx_CR2_DS & 0xF ;
         if( temp_DS>8 ){
             //16bits
-            pSPIHandle->pSPIx->DR = *((uint16_t*)pTxBuffer);
+            pSPIx->DR = *((uint16_t*)pTxBuffer);
             len--;
             len--; //因為送出去2個byte
             (uint16_t*)pTxBuffer++; //這樣原本的pTxBuffer就會等同於+2
         }else{
             //8bits
         
-            *((uint8_t*)&(pSPIHandle->pSPIx->DR)) = *((uint8_t*)pTxBuffer);
+            *((uint8_t*)&(pSPIx->DR)) = *((uint8_t*)pTxBuffer);
             //必須要把DR給轉型成uint8_t 否則會有dataPACKING的問題 導致系統把這個當作16bits 傳出去
 
             len--;
@@ -240,14 +232,14 @@ void SPI_SendData(SPI_Handle_t *pSPIHandle, uint8_t *pTxBuffer, uint32_t len)
  * 
  * @note                    - none
  * */
-void SPI_ReceiveData(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t len){
+void SPI_ReceiveData(SPI_RegDef_t *pSPIx, uint8_t *pRxBuffer, uint32_t len){
     while(len>0)
     {
         //1. wait until RXNE is set
-        while(SPI_GetFlagStatus(pSPIHandle, SPI_RXNE_FLAG) == FLAG_RESET);
+        while(SPI_GetFlagStatus(pSPIx, SPI_RXNE_FLAG) == FLAG_RESET);
         //2. check the DS bit in CR2
         // TODO: 只先做8bit跟16bit的
-        uint32_t temp_DS = pSPIHandle->pSPIx->CR2 >> SPIx_CR2_DS & 0xF ;
+        uint32_t temp_DS = pSPIx->CR2 >> SPIx_CR2_DS & 0xF ;
 
 
         if( temp_DS>7 ){
@@ -255,14 +247,14 @@ void SPI_ReceiveData(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t len)
             
             //load the data from DR to Rxbuffer address
 
-            *((uint16_t*)pRxBuffer) = pSPIHandle->pSPIx->DR; 
+            *((uint16_t*)pRxBuffer) = pSPIx->DR; 
             len--;
             len--; //因為送出去2個byte
             (uint16_t*)pRxBuffer++; //這樣原本的pTxBuffer就會等同於+2
         }else{
             //8bits
         
-            *pRxBuffer = *((uint8_t*)&(pSPIHandle->pSPIx->DR));
+            *pRxBuffer = *((uint8_t*)&(pSPIx->DR));
             //必須要把DR給轉型成uint8_t 否則會有dataPACKING的問題 導致系統把這個當作16bits 傳出去
 
             len--;
@@ -348,14 +340,14 @@ uint8_t SPI_ReceiveDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t
  * 
  * @note                    - none
  * */
-void SPI_PeripheralControl(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi)
+void SPI_PeripheralControl(SPI_RegDef_t *pSPIx, uint8_t EnOrDi)
 {
     if(EnOrDi == ENABLE)
     {
-        pSPIHandle->pSPIx->CR1 |= (1 << SPIx_CR1_SPE);
+        pSPIx->CR1 |= (1 << SPIx_CR1_SPE);
 
     }else{
-        pSPIHandle->pSPIx->CR1 &= ~(1 << SPIx_CR1_SPE);
+        pSPIx->CR1 &= ~(1 << SPIx_CR1_SPE);
 
     }
 }
@@ -372,14 +364,14 @@ void SPI_PeripheralControl(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi)
  * 
  * @note                    - none
  * */
-void SPI_SSIConfig(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi){
+void SPI_SSIConfig(SPI_RegDef_t *pSPIx, uint8_t EnOrDi){
     
     if(EnOrDi == ENABLE)
     {
-        pSPIHandle->pSPIx->CR1 |= (1 << SPIx_CR1_SSI);
+        pSPIx->CR1 |= (1 << SPIx_CR1_SSI);
 
     }else{
-        pSPIHandle->pSPIx->CR1 &= ~(1 << SPIx_CR1_SSI);
+        pSPIx->CR1 &= ~(1 << SPIx_CR1_SSI);
 
     }
 
@@ -397,16 +389,27 @@ void SPI_SSIConfig(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi){
  * 
  * @note                    - none
  * */
-void SPI_SSOEConfig(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi){
+void SPI_SSOEConfig(SPI_RegDef_t *pSPIx, uint8_t EnOrDi){
     if(EnOrDi == ENABLE)
     {
-        pSPIHandle->pSPIx->CR2 |= (1 << SPIx_CR2_SSOE);
+        pSPIx->CR2 |= (1 << SPIx_CR2_SSOE);
 
     }else{
-        pSPIHandle->pSPIx->CR2 &= ~(1 << SPIx_CR2_SSOE);
+        pSPIx->CR2 &= ~(1 << SPIx_CR2_SSOE);
 
     }
 }
+
+
+uint8_t SPI_GetFlagStatus(SPI_RegDef_t *pSPIx, uint32_t FlagName)
+{
+    if(pSPIx->SR & FlagName)// FlagName 其實就是 bit mask
+    {
+        return FLAG_SET;
+    }
+    return FLAG_RESET;
+}
+
 
 /***************************************************
  * @fn                      - 
@@ -421,11 +424,11 @@ void SPI_SSOEConfig(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi){
  * 
  * @note                    - none
  * */
-void SPI_ClearOVRFlag(SPI_Handle_t * pSPIHandle)
+void SPI_ClearOVRFlag(SPI_RegDef_t *pSPIx)
 {
     uint8_t temp;
-    temp = pSPIHandle->pSPIx->DR;
-    temp = pSPIHandle->pSPIx->SR;
+    temp = pSPIx->DR;
+    temp = pSPIx->SR;
     (void)temp; //只是為了把 warning unused variable清掉
 }
 /***************************************************
