@@ -141,8 +141,8 @@ void SPI_DeInit(SPI_Handle_t *pSPIHandle);
 Data Send and Receive
 */
 //blocking-based
-void SPI_SendData(SPI_Handle_t *pSPIHandle, uint8_t *pTxBuffer, uint32_t len);
-void SPI_ReceiveData(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t len);
+void SPI_SendData(SPI_RegDef_t *pSPIx, uint8_t *pTxBuffer, uint32_t len);
+void SPI_ReceiveData(SPI_RegDef_t *pSPIx, uint8_t *pRxBuffer, uint32_t len);
 //non-blocking(Interrupt-based)
 uint8_t SPI_SendDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pTxBuffer, uint32_t len);
 uint8_t SPI_ReceiveDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t len);
@@ -151,11 +151,11 @@ uint8_t SPI_ReceiveDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t
 /*
 Other peripheral control API
 */
-void SPI_PeripheralControl(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi);
-void SPI_SSIConfig(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi);
-void SPI_SSOEConfig(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi);
-uint8_t SPI_GetFlagStatus(SPI_Handle_t * pSPIHandle, uint32_t FlagName);
-void SPI_ClearOVRFlag(SPI_Handle_t * pSPIHandle);
+void SPI_PeripheralControl(SPI_RegDef_t *pSPIx, uint8_t EnOrDi);
+void SPI_SSIConfig(SPI_RegDef_t *pSPIx, uint8_t EnOrDi);
+void SPI_SSOEConfig(SPI_RegDef_t *pSPIx, uint8_t EnOrDi);
+uint8_t SPI_GetFlagStatus(SPI_RegDef_t *pSPIx, uint32_t FlagName);
+void SPI_ClearOVRFlag(SPI_RegDef_t *pSPIx);
 void SPI_CloseTransmission(SPI_Handle_t *pSPIHandle);
 void SPI_CloseReception(SPI_Handle_t *pSPIHandle);
 /*
