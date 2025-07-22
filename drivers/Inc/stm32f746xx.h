@@ -11,6 +11,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 /************************　 Processor Specific Details *******************/
 //ARM® Cortex®-M7 Devices Generic user guide ch4.2 
 
@@ -220,9 +221,62 @@ typedef struct{
     volatile uint32_t CMPCR;
 }SYSCFG_RegDef_t;
 
-/*
-SPI and I2S register
-*/
+//SPI 
+typedef struct {
+    volatile uint32_t CR1;
+    // |15:BIDIMODE|14:BIDIOE|13:CRCEN|12:CRCNEXT|11:CRCL|10:RXONLY|9:SSM|8:SSI|
+    // |7:LSBFIRST|6:SPE|5-3:BR[2:0]|2:MSTR|1:CPOL|0:CPHA|
+
+    volatile uint32_t CR2;
+    // |15-14:Reserved|13:LDMA_TX|12:LDMA_RX|11-10:FRXTH|9-8:DS[3:0]|7:TXEIE|
+    // |6:RXNEIE|5:ERRIE|4:FRF|3:NSSP|2:SSOE|1:TXDMAEN|0:RXDMAEN|
+
+    volatile uint32_t SR;
+    // |15-11:Reserved|10:FTLVL[1:0]|8-9:FRLVL[1:0]|7:FRE|6:BSY|5:OVR|
+    // |4:MODF|3:CRCERR|2:UDR|1:CHSIDE|0:RXNE|
+
+    volatile uint32_t DR;
+    // |15-0:DR[15:0]|
+
+    volatile uint32_t CRCPR;
+    // |15-0:CRCPOLY[15:0]|
+
+    volatile uint32_t RXCRCR;
+    // |15-0:RXCRC[15:0]|
+
+    volatile uint32_t TXCRCR;
+    // |15-0:TXCRC[15:0]|
+
+    volatile uint32_t I2SCFGR;
+    // |15:ASTRTEN|14:I2SMOD|13:I2SE|12:I2SCFG[1:0]|10:PCMSYNC|9:I2SSTD|
+    // |8:CKPOL|7:DATLEN[1:0]|5:CHLEN|
+
+    volatile uint32_t I2SPR;
+    // |15-9:Reserved|8:MCKOE|7:ODD|6-0:I2SDIV[7:0]|
+
+} SPI_RegDef_t;
+
+//I2C
+typedef struct {
+    volatile uint32_t CR1;        // 0x00
+    volatile uint32_t CR2;        // 0x04
+    volatile uint32_t OAR1;       // 0x08
+    volatile uint32_t OAR2;       // 0x0C
+    volatile uint32_t TIMINGR;    // 0x10
+    volatile uint32_t TIMEOUTR;   // 0x14
+    volatile uint32_t ISR;        // 0x18
+    volatile uint32_t ICR;        // 0x1C
+    volatile uint32_t PECR;       // 0x20
+    volatile uint32_t RXDR;       // 0x24
+    volatile uint32_t TXDR;       // 0x28
+}I2C_RegDef_t;
+
+
+/****************************Peripheral register bit definition**************************/
+
+/****************************
+ *SPI and I2S bit definition*
+ ****************************/
 // SPIx CR1
 enum {
     SPIx_CR1_CPHA     = 0,
@@ -270,39 +324,109 @@ enum {
     SPIx_SR_FRLVL     = 9,  // FRLVL[1:0] 在 bit 9~10
     SPIx_SR_FTLVL     = 11  // FTLVL[1:0] 在 bit 11~12
 };
-typedef struct {
-    volatile uint32_t CR1;
-    // |15:BIDIMODE|14:BIDIOE|13:CRCEN|12:CRCNEXT|11:CRCL|10:RXONLY|9:SSM|8:SSI|
-    // |7:LSBFIRST|6:SPE|5-3:BR[2:0]|2:MSTR|1:CPOL|0:CPHA|
 
-    volatile uint32_t CR2;
-    // |15-14:Reserved|13:LDMA_TX|12:LDMA_RX|11-10:FRXTH|9-8:DS[3:0]|7:TXEIE|
-    // |6:RXNEIE|5:ERRIE|4:FRF|3:NSSP|2:SSOE|1:TXDMAEN|0:RXDMAEN|
+/****************************
+ *    I2C bit definition    *
+ ****************************/
+typedef enum {
+    I2C_CR1_PE        = 0,
+    I2C_CR1_TXIE      = 1,
+    I2C_CR1_RXIE      = 2,
+    I2C_CR1_ADDRIE    = 3,
+    I2C_CR1_NACKIE    = 4,
+    I2C_CR1_STOPIE    = 5,
+    I2C_CR1_TCIE      = 6,
+    I2C_CR1_ERRIE     = 7,
+    I2C_CR1_DNF       = 8,   // DNF[3:0]
+    I2C_CR1_ANFOFF    = 12,
+    I2C_CR1_TXDMAEN   = 14,
+    I2C_CR1_RXDMAEN   = 15,
+    I2C_CR1_SBC       = 16,
+    I2C_CR1_NOSTRETCH = 17,
+    I2C_CR1_GCEN      = 19,
+    I2C_CR1_SMBHEN    = 20,
+    I2C_CR1_SMBDEN    = 21,
+    I2C_CR1_ALERTEN   = 22,
+    I2C_CR1_PECEN     = 23
+} I2C_CR1_Bit_t;
 
-    volatile uint32_t SR;
-    // |15-11:Reserved|10:FTLVL[1:0]|8-9:FRLVL[1:0]|7:FRE|6:BSY|5:OVR|
-    // |4:MODF|3:CRCERR|2:UDR|1:CHSIDE|0:RXNE|
+typedef enum {
+    I2C_CR2_SADD       = 0,   // SADD[9:0]
+    I2C_CR2_RD_WRN     = 10,
+    I2C_CR2_ADD10      = 11,
+    I2C_CR2_HEAD10R    = 12,
+    I2C_CR2_START      = 13,
+    I2C_CR2_STOP       = 14,
+    I2C_CR2_NACK       = 15,
+    I2C_CR2_NBYTES     = 16,  // NBYTES[7:0]
+    I2C_CR2_RELOAD     = 24,
+    I2C_CR2_AUTOEND    = 25,
+    I2C_CR2_PECBYTE    = 26
+} I2C_CR2_Bit_t;
 
-    volatile uint32_t DR;
-    // |15-0:DR[15:0]|
+typedef enum {
+    I2C_OAR1_OA1       = 0,   // OA1[9:0]
+    I2C_OAR1_OA1MODE   = 10,
+    I2C_OAR1_OA1EN     = 15
+} I2C_OAR1_Bit_t;
 
-    volatile uint32_t CRCPR;
-    // |15-0:CRCPOLY[15:0]|
+typedef enum {
+    I2C_OAR2_OA2         = 1,   // OA2[7:1]
+    I2C_OAR2_OA2MSK      = 8,   // OA2MSK[2:0]
+    I2C_OAR2_OA2EN       = 15
+} I2C_OAR2_Bit_t;
 
-    volatile uint32_t RXCRCR;
-    // |15-0:RXCRC[15:0]|
+typedef enum {
+    I2C_TIMINGR_SCLL   = 0,
+    I2C_TIMINGR_SCLH   = 8,
+    I2C_TIMINGR_SDADEL = 16,
+    I2C_TIMINGR_SCLDEL = 20,
+    I2C_TIMINGR_PRESC  = 28
+} I2C_TIMINGR_Bit_t;
 
-    volatile uint32_t TXCRCR;
-    // |15-0:TXCRC[15:0]|
+typedef enum {
+    I2C_TIMEOUTR_TIMEOUTA     = 0,
+    I2C_TIMEOUTR_TIDLE        = 12,
+    I2C_TIMEOUTR_TIMOUTEN     = 15,
+    I2C_TIMEOUTR_TIMEOUTB     = 16,
+    I2C_TIMEOUTR_TEXTEN       = 31
+} I2C_TIMEOUTR_Bit_t;
 
-    volatile uint32_t I2SCFGR;
-    // |15:ASTRTEN|14:I2SMOD|13:I2SE|12:I2SCFG[1:0]|10:PCMSYNC|9:I2SSTD|
-    // |8:CKPOL|7:DATLEN[1:0]|5:CHLEN|
+typedef enum {
+    I2C_ISR_TXE         = 0,
+    I2C_ISR_TXIS        = 1,
+    I2C_ISR_RXNE        = 2,
+    I2C_ISR_ADDR        = 3,
+    I2C_ISR_NACKF       = 4,
+    I2C_ISR_STOPF       = 5,
+    I2C_ISR_TC          = 6,
+    I2C_ISR_TCR         = 7,
+    I2C_ISR_BERR        = 8,
+    I2C_ISR_ARLO        = 9,
+    I2C_ISR_OVR         = 10,
+    I2C_ISR_PECERR      = 11,
+    I2C_ISR_TIMEOUT     = 12,
+    I2C_ISR_ALERT       = 13,
+    I2C_ISR_BUSY        = 15,
+    I2C_ISR_DIR         = 16,
+    I2C_ISR_ADDCODE     = 17  // ADDCODE[6:0]
+} I2C_ISR_Bit_t;
 
-    volatile uint32_t I2SPR;
-    // |15-9:Reserved|8:MCKOE|7:ODD|6-0:I2SDIV[7:0]|
+typedef enum {
+    I2C_ICR_ADDRCF   = 3,
+    I2C_ICR_NACKCF   = 4,
+    I2C_ICR_STOPCF   = 5,
+    I2C_ICR_BERRCF   = 8,
+    I2C_ICR_ARLOCF   = 9,
+    I2C_ICR_OVRCF    = 10,
+    I2C_ICR_PECCF    = 11,
+    I2C_ICR_TIMOUTCF = 12,
+    I2C_ICR_ALERTCF  = 13
+} I2C_ICR_Bit_t;
 
-} SPI_RegDef_t;
+/****************************
+ *    bit definition    *
+ ****************************/
 
 
 /****************************Peripheral definitions **************************/
@@ -332,6 +456,13 @@ typedef struct {
 #define SPI4        ((SPI_RegDef_t *)SPI4_BASEADDR)
 #define SPI5        ((SPI_RegDef_t *)SPI5_BASEADDR)
 #define SPI6        ((SPI_RegDef_t *)SPI6_BASEADDR)
+
+
+#define I2C1        ((I2C_RegDef_t *)I2C1_BASEADDR)
+#define I2C2        ((I2C_RegDef_t *)I2C2_BASEADDR)
+#define I2C3        ((I2C_RegDef_t *)I2C3_BASEADDR)
+#define I2C4        ((I2C_RegDef_t *)I2C4_BASEADDR)
+
 /*
 * Clock Enable Macros for GPIOx peripherals
 */
@@ -471,6 +602,13 @@ typedef struct {
 
 #define SPI2_REG_RESET()   do{ (RCC->APB1RSTR |=(1<<14) ); (RCC->APB1RSTR &= ~(1<<14) ); }while(0)
 #define SPI3_REG_RESET()   do{ (RCC->APB1RSTR |=(1<<15) ); (RCC->APB1RSTR &= ~(1<<15) ); }while(0)
+
+//i2c reset
+#define I2C1_REG_RESET()   do{ (RCC->APB1RSTR |=(1<<21) ); (RCC->APB1RSTR &= ~(1<<21) ); }while(0)
+#define I2C2_REG_RESET()   do{ (RCC->APB1RSTR |=(1<<22) ); (RCC->APB1RSTR &= ~(1<<22) ); }while(0)
+#define I2C3_REG_RESET()   do{ (RCC->APB1RSTR |=(1<<23) ); (RCC->APB1RSTR &= ~(1<<23) ); }while(0)
+#define I2C4_REG_RESET()   do{ (RCC->APB1RSTR |=(1<<24) ); (RCC->APB1RSTR &= ~(1<<24) ); }while(0)
+
 //GPIO useful macro
 //
 #define GPIO_BASEADDR_TO_CODE(x)    ((x==GPIOA)?0:\
@@ -522,12 +660,27 @@ typedef struct {
 #define IRQ_NO_SPI5         85
 #define IRQ_NO_SPI6         86
 
+// I2C
+#define IRQ_NO_I2C1_EV      31 //event interrupt
+#define IRQ_NO_I2C1_ER      32 //error interrupt
+#define IRQ_NO_I2C2_EV      33 
+#define IRQ_NO_I2C2_ER      34 
+#define IRQ_NO_I2C3_EV      72 
+#define IRQ_NO_I2C3_ER      73 
+#define IRQ_NO_I2C4_EV      95 
+#define IRQ_NO_I2C4_ER      96 
+
 //Macros for all possible Interrupt priority
 #define NVIC_IRQ_RRI0       0
 #define NVIC_IRQ_RRI15      15
                              //include
+
+
+//Clock
+#define HSI_CLK_FREQ        16000000 //16M
+
 #include "stm32f746xx_gpio.h"
 #include "stm32f746xx_spi.h"
-
+#include "stm32f746xx_i2c.h"
 /* INC_STM32F746XX_H_ */
 #endif 
