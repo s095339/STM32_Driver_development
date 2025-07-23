@@ -13,6 +13,7 @@ uint16_t AHB_presc[] = {2,4,8,16,64,128,256,512};
 
 // private function
 static void I2C_GenerateStartCondition(I2C_RegDef_t *pI2Cx);
+static void I2C_GenerateStopCondition(I2C_RegDef_t *pI2Cx);
 static uint32_t RCC_GetI2CCLKValue(I2C_Handle_t *I2C_Handle);
 
 
@@ -64,7 +65,7 @@ void I2C_Init(I2C_Handle_t *pI2CHandle)
     I2C_PeripheralControl(pI2CHandle, DISABLE);
 
     // get clock info
-    uint32_t clkfreq = RCC_GetI2CCLKValue(pI2CHandle);
+    //uint32_t clkfreq = RCC_GetI2CCLKValue(pI2CHandle);
     // set clk source
     if(pI2CHandle->pI2Cx == I2C1)
     {
@@ -179,7 +180,7 @@ void I2C_ControllerSendData(
     uint8_t AUTOEND
 )
 {
-    // W/~R
+    // R/~W
     //pI2CHandle->pI2Cx->CR2 |= 1<<I2C_CR2_RD_WRN;
     pI2CHandle->pI2Cx->CR2 &= ~(1<<I2C_CR2_RD_WRN);
 
@@ -475,7 +476,11 @@ uint8_t I2C_GetFlagStatus(I2C_RegDef_t *pI2Cx, uint32_t FlagName)
 /*
 * application callback
 */
-void I2C_ApplicationEventCallback(I2C_Handle_t *pI2CHandle, uint8_t AppEv);
+
+__attribute__((weak)) void I2C_ApplicationEventCallback(I2C_Handle_t *pI2CHandle, uint8_t AppEv)
+{
+
+}
 /*
 ISR handling
 */
@@ -596,4 +601,145 @@ static uint32_t RCC_GetI2CCLKValue(I2C_Handle_t *I2C_Handle)
     pclk1 = (SystemClk/ahbp)/apb1p;
 
     return pclk1;
+}
+
+void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
+{
+    uint32_t EV_EN;
+    uint32_t EV_FLAG;
+    uint32_t MASK;
+    EV_EN = pI2CHandle->pI2Cx->CR1;
+    
+    
+
+
+    //STOPIE
+    MASK = (1 << I2C_CR1_STOPIE);
+    if((EV_EN & MASK) == MASK && I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_STOPF_FLAG))
+    {
+        //Clear the STOPF by setting the STOPCF bit
+        pI2CHandle->pI2Cx->ICR |= (1 << I2C_ICR_STOPCF);
+        //Disable the stop interrupt
+        pI2CHandle->pI2Cx->CR1 &= ~(1 << I2C_CR1_STOPIE);
+        //Notify the application that STOP is detected
+
+        //check autoend
+        if( (pI2CHandle->pI2Cx->CR2 & (1 << I2C_CR2_AUTOEND)) == (1 << I2C_CR2_AUTOEND))
+        {
+            //do nothing
+        }
+        else{
+            //write stop = 1
+            I2C_GenerateStopCondition(pI2CHandle->pI2Cx);
+        }
+
+
+        if(pI2CHandle->TxRxState == I2C_BUSY_IN_TX)
+        {
+            uint32_t tempreg = 0;
+            // disable TXIS interrupt
+            tempreg |= 1 << I2C_CR1_TXIE; 
+            // disable ADDR interrupt (for target mode, when address sent is matched)
+
+            // disable STOPF interrupt  (STOP detection flag: This flag is set by hardware when a STOP condition 
+            tempreg |= 1 << I2C_CR1_STOPIE;
+            // disable TC and TCR interrupt
+            tempreg |= 1 << I2C_CR1_TCIE;
+            //TODO: disable bus error, overrun/underrun and timeout error
+            //tempreg |= 1 << I2C_CR1_ERRIE;
+
+            pI2CHandle->pI2Cx->CR1 &= ~(tempreg);
+            //I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_TX_CMPLT);
+
+            I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_TX_CMPLT);
+        }
+        if(pI2CHandle->TxRxState == I2C_BUSY_IN_RX)
+        {
+
+            uint32_t tempreg = 0;
+            // open TXIS interrupt
+            tempreg |= 1 << I2C_CR1_RXIE; 
+            // open TC and TCR interrupt
+            tempreg |= 1 << I2C_CR1_TCIE;
+            // open STOPIE 
+            tempreg |= 1 << I2C_CR1_STOPIE;
+            //TODO: open bus error, overrun/underrun and timeout error
+            //tempreg |= 1 << I2C_CR1_ERRIE;
+
+            pI2CHandle->pI2Cx->CR1 &= ~(tempreg);
+            //I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_RX_CMPLT);
+
+            I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_RX_CMPLT);
+        }
+        
+        pI2CHandle->TxRxState = I2C_READY;
+
+        
+    }
+
+    
+    // TC ========================================
+    MASK = (1 << I2C_CR1_TCIE);
+    if( ((EV_EN & MASK) == MASK) && I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_TC_FLAG))
+    {
+        //TODO
+    }
+    // TCR
+    MASK = (1 << I2C_CR1_TCIE);
+    if( (EV_EN & MASK) == MASK && I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_TCR_FLAG))
+    {
+        //TODO:
+    }
+
+
+    //TXIS==========================================//
+    MASK = (1 << I2C_CR1_TXIE);
+    if( (EV_EN & MASK) == MASK && I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_TXIS_FLAG))
+    {
+        //if device is master
+        
+        // Data transmition
+        if(pI2CHandle->TxRxState == I2C_BUSY_IN_TX)
+        {
+            if(pI2CHandle->TxLen > 0)
+            {
+                //1. load the data into DR (cleared the TXIS and TXE)
+                pI2CHandle->pI2Cx->TXDR = *(pI2CHandle->pTxBuffer);
+                //2. decrement the TxLen
+                pI2CHandle->TxLen--;
+                //3. Increment the buffer address
+                if(pI2CHandle->TxLen)
+                    pI2CHandle->pTxBuffer++;
+            }
+        }
+
+    }
+    //RXNE==========================================//
+    MASK = (1 << I2C_CR1_RXIE);
+    if( (EV_EN & MASK) == MASK && I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_RXNE_FLAG))
+    {
+        if(pI2CHandle->TxRxState == I2C_BUSY_IN_RX)
+        {
+            //1. read the data in DR
+            *(pI2CHandle->pRxBuffer) = pI2CHandle->pI2Cx->RXDR;
+            //2. 
+            pI2CHandle->RxLen--;
+            //3.
+            if(pI2CHandle->RxLen)
+                pI2CHandle->pRxBuffer++;
+            
+        }
+    }
+    
+}
+
+
+//private function
+static inline void I2C_GenerateStartCondition(I2C_RegDef_t *pI2Cx)
+{
+    pI2Cx->CR2 |= 1 << I2C_CR2_START;
+}
+static inline void I2C_GenerateStopCondition(I2C_RegDef_t *pI2Cx)
+{
+    pI2Cx->CR2 |= 1 << I2C_CR2_STOP;
 }
