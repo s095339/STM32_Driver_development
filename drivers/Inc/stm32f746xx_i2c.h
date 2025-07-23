@@ -104,8 +104,26 @@ typedef struct
 #define I2C_DIR_FLAG       (1 << I2C_ISR_DIR)
 //#define I2C_ADDCODE_MASK   (0x7F << I2C_ISR_ADDCODE)
 
+/*
+ * @TxRxState
+ */
+#define I2C_READY        0
+#define I2C_BUSY_IN_RX   1
+#define I2C_BUSY_IN_TX   2
 
-
+/*
+ * I2C application events macros
+ */
+#define I2C_EV_TX_CMPLT  	 	0
+#define I2C_EV_RX_CMPLT  	 	1
+#define I2C_EV_STOP       		2
+//#define I2C_ERROR_BERR 	 	3
+//#define I2C_ERROR_ARLO  		4
+//#define I2C_ERROR_AF    		5
+//#define I2C_ERROR_OVR   		6
+//#define I2C_ERROR_TIMEOUT 	7
+#define I2C_EV_DATA_REQ         8
+#define I2C_EV_DATA_RCV         9
  /***************************************************
  *                      APIs 
  ***************************************************/
@@ -152,6 +170,7 @@ ISR handling
 */
 void I2C_IRQITConfig(uint8_t IRQNumber, uint8_t EnorDi);
 void I2C_IRQPriorityConfig(uint8_t IRQNumber, uint8_t IRQPriority);
+void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle);
 
 
 
