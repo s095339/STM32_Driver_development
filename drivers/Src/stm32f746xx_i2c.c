@@ -163,8 +163,24 @@ void I2C_Init(I2C_Handle_t *pI2CHandle)
 
     pI2CHandle->pI2Cx->OAR1 = tempreg;
 
+    I2C_PeripheralControl(pI2CHandle, ENABLE);
+    //Interrupt==========================================//
+    tempreg = 0;
     // Interrupt enable for possible slave transcation
-    pI2CHandle->pI2Cx->CR2 |= I2C_CR1_ADDRIE;
+    tempreg |= 1 << I2C_CR1_ADDRIE;
+    // open TXIS interrupt
+    //tempreg |= 1 << I2C_CR1_TXIE; 
+    // open RXNE interrupt
+    //tempreg |= 1 << I2C_CR1_RXIE; 
+    // open TC and TCR interrupt
+    //tempreg |= 1 << I2C_CR1_TCIE;
+    // open STOPIE 
+    //tempreg |= 1 << I2C_CR1_STOPIE;
+    pI2CHandle->pI2Cx->CR1 |= tempreg;
+    
+    
+    
+
 }
 void I2C_DeInit(I2C_Handle_t *pI2CHandle){
     
@@ -184,6 +200,15 @@ void I2C_ControllerSendData(
     uint8_t AUTOEND
 )
 {
+    //disable interrupt========================
+    
+    uint32_t tempreg = 0;
+    // Interrupt enable for possible slave transcation
+    tempreg |= 1 << I2C_CR1_ADDRIE;
+ 
+    pI2CHandle->pI2Cx->CR1 &= ~(tempreg);
+
+    //=========================================
     // R/~W
     //pI2CHandle->pI2Cx->CR2 |= 1<<I2C_CR2_RD_WRN;
     pI2CHandle->pI2Cx->CR2 &= ~(1<<I2C_CR2_RD_WRN);
@@ -220,8 +245,7 @@ void I2C_ControllerSendData(
     }
 
 
-    //Enable I2C
-    I2C_PeripheralControl(pI2CHandle, ENABLE);
+    
     // Generate the START condition
     I2C_GenerateStartCondition(pI2CHandle->pI2Cx);
     // 2. 
@@ -238,13 +262,30 @@ void I2C_ControllerSendData(
     //while(!I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_TXE_FLAG) );
     while(I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_BUSY_FLAG) );
 
-    I2C_PeripheralControl(pI2CHandle, DISABLE);
+   //enable interrupt========================
+    
+    tempreg = 0;
+    // Interrupt enable for possible slave transcation
+    tempreg |= 1 << I2C_CR1_ADDRIE;
+   
+    pI2CHandle->pI2Cx->CR1 |= (tempreg);
+
+    //=========================================
 }
 
 void I2C_ControllerReceiveData(
     I2C_Handle_t *pI2CHandle, uint8_t *pRxbuffer, uint32_t Len, uint8_t SlaveAddr, uint8_t AUTOEND
 )
 {
+    //disable interrupt========================
+    
+    uint32_t tempreg = 0;
+    
+    tempreg |= 1 << I2C_CR1_ADDRIE;
+    
+    pI2CHandle->pI2Cx->CR1 &= ~(tempreg);
+
+    //=========================================
     // Controller Initialization
     // W/~R
     pI2CHandle->pI2Cx->CR2 |= 1<<I2C_CR2_RD_WRN;
@@ -283,7 +324,7 @@ void I2C_ControllerReceiveData(
 
 
     //Enable I2C
-    I2C_PeripheralControl(pI2CHandle, ENABLE);
+    
     // Generate the START condition
     I2C_GenerateStartCondition(pI2CHandle->pI2Cx);
     // 2. 
@@ -300,7 +341,16 @@ void I2C_ControllerReceiveData(
     //while(!I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_TXE_FLAG) );
     while(I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_BUSY_FLAG) );
 
-    I2C_PeripheralControl(pI2CHandle, DISABLE);
+
+    //enable interrupt========================
+    
+    tempreg = 0;
+    // Interrupt enable for possible slave transcation
+    tempreg |= 1 << I2C_CR1_ADDRIE;
+
+    pI2CHandle->pI2Cx->CR1 |= (tempreg);
+
+    //=========================================
 
 }
 
@@ -369,8 +419,7 @@ uint8_t I2C_ControllerSendDataIT(I2C_Handle_t *pI2CHandle,uint8_t *pTxBuffer, ui
         }
 
 
-        //Enable I2C
-        I2C_PeripheralControl(pI2CHandle, ENABLE);
+        
         
 		//Implement code to Generate START Condition
 		I2C_GenerateStartCondition(pI2CHandle->pI2Cx);
@@ -447,8 +496,7 @@ uint8_t I2C_ControllerReceiveDataIT(I2C_Handle_t *pI2CHandle,uint8_t *pRxBuffer,
         }
 
 
-        //Enable I2C
-        I2C_PeripheralControl(pI2CHandle, ENABLE);
+        
         //Implement code to Generate START Condition
 		I2C_GenerateStartCondition(pI2CHandle->pI2Cx);
 	}
@@ -682,7 +730,7 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
 
             pI2CHandle->pI2Cx->CR1 &= ~(tempreg);
             //I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_RX_CMPLT);
-
+            
             I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_RX_CMPLT);
         }else
         {
@@ -716,9 +764,9 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
         //clear 
         
         //check ADDR (7bits)
-        uint32_t ADDR_MASK = 0x3F;
+        uint32_t ADDR_MASK = 0x7F;
         
-        if( ((pI2CHandle->pI2Cx->ISR >>I2C_ISR_ADDCODE)&ADDR_MASK) == ((pI2CHandle->pI2Cx->OAR1 >> I2C_OAR1_OA1)&ADDR_MASK))
+        if( ((pI2CHandle->pI2Cx->ISR >>I2C_ISR_ADDCODE)&ADDR_MASK) == ((pI2CHandle->pI2Cx->OAR1 >> (I2C_OAR1_OA1+1))&ADDR_MASK))
         {
             uint32_t DIR_MASK = 1 << I2C_ISR_DIR;
             if((pI2CHandle->pI2Cx->ISR & DIR_MASK) == DIR_MASK)
