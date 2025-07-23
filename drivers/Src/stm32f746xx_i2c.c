@@ -300,8 +300,156 @@ void I2C_ControllerReceiveData(
 }
 
 //non-blocking(Interrupt-based)
-uint8_t I2C_SendDataIT(I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t len);
-uint8_t I2C_ReceiveDataIT(I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32_t len);
+uint8_t I2C_ControllerSendDataIT(I2C_Handle_t *pI2CHandle,uint8_t *pTxBuffer, uint32_t Len,uint8_t SlaveAddr,uint8_t Sr)
+{
+    uint8_t busystate = pI2CHandle->TxRxState;
+
+	if( (busystate != I2C_BUSY_IN_TX) && (busystate != I2C_BUSY_IN_RX))
+	{
+		pI2CHandle->pTxBuffer = pTxBuffer;
+		pI2CHandle->TxLen = Len;
+		pI2CHandle->TxRxState = I2C_BUSY_IN_TX;
+		pI2CHandle->DevAddr = SlaveAddr;
+		pI2CHandle->Sr = Sr;
+
+        //Implement the code to enable Interrupt
+
+        uint32_t tempreg = 0;
+        // open TXIS interrupt
+        tempreg |= 1 << I2C_CR1_TXIE; 
+        // open ADDR interrupt (for target mode, when address sent is matched)
+
+        // open STOPF interrupt  (STOP detection flag: This flag is set by hardware when a STOP condition 
+        tempreg |= 1 << I2C_CR1_STOPIE;
+        // open TC and TCR interrupt
+        tempreg |= 1 << I2C_CR1_TCIE;
+        //TODO: open bus error, overrun/underrun and timeout error
+        //tempreg |= 1 << I2C_CR1_ERRIE;
+
+        pI2CHandle->pI2Cx->CR1 |= tempreg;
+
+
+
+        // R/~W
+        //pI2CHandle->pI2Cx->CR2 |= 1<<I2C_CR2_RD_WRN;
+        pI2CHandle->pI2Cx->CR2 &= ~(1<<I2C_CR2_RD_WRN);
+
+        // NBYTE
+        pI2CHandle->pI2Cx->CR2 &=  ~(0xFF<<I2C_CR2_NBYTES);
+        pI2CHandle->pI2Cx->CR2 |=   (Len<<I2C_CR2_NBYTES);
+
+        //autoend = 1; 
+        // TODO: autoend = 0; 
+        pI2CHandle->pI2Cx->CR2 |= (1<<I2C_CR2_AUTOEND);
+
+        if(Len <= 255){ 
+            pI2CHandle->pI2Cx->CR2 &= ~(1<<I2C_CR2_RELOAD);
+        }
+        else{
+            pI2CHandle->pI2Cx->CR2 |= (1<<I2C_CR2_RELOAD);
+        }
+
+        // Configure target address
+
+        if(pI2CHandle->I2C_Config.I2C_AddrMode)
+        {
+            //10bits
+            pI2CHandle->pI2Cx->CR2 &= ~(0x3FF<<I2C_CR2_SADD);
+            pI2CHandle->pI2Cx->CR2 |= ( (SlaveAddr&0x3FF)<<I2C_CR2_SADD);
+        }else
+        {
+            //7bits
+            pI2CHandle->pI2Cx->CR2 &= ~(0x7F<<(I2C_CR2_SADD+1));
+            pI2CHandle->pI2Cx->CR2 |= ( (SlaveAddr&0x7F)<<(I2C_CR2_SADD+1));
+        }
+
+
+        //Enable I2C
+        I2C_PeripheralControl(pI2CHandle, ENABLE);
+        
+		//Implement code to Generate START Condition
+		I2C_GenerateStartCondition(pI2CHandle->pI2Cx);
+
+		
+	}
+
+	return busystate;
+}
+uint8_t I2C_ControllerReceiveDataIT(I2C_Handle_t *pI2CHandle,uint8_t *pRxBuffer, uint32_t Len, uint8_t SlaveAddr,uint8_t Sr)
+{
+    uint8_t busystate = pI2CHandle->TxRxState;
+
+	if( (busystate != I2C_BUSY_IN_TX) && (busystate != I2C_BUSY_IN_RX))
+	{
+		pI2CHandle->pRxBuffer = pRxBuffer;
+		pI2CHandle->RxLen = Len;
+		pI2CHandle->TxRxState = I2C_BUSY_IN_RX;
+		pI2CHandle->RxSize = Len; //Rxsize is used in the ISR code to manage the data reception 
+		pI2CHandle->DevAddr = SlaveAddr;
+		pI2CHandle->Sr = Sr;
+
+		
+
+		//Implement the code to enable Interrupt
+
+        uint32_t tempreg = 0;
+        // open TXIS interrupt
+        tempreg |= 1 << I2C_CR1_RXIE; 
+        // open TC and TCR interrupt
+        tempreg |= 1 << I2C_CR1_TCIE;
+        // open STOPIE 
+        tempreg |= 1 << I2C_CR1_STOPIE;
+        //TODO: open bus error, overrun/underrun and timeout error
+        //tempreg |= 1 << I2C_CR1_ERRIE;
+
+		pI2CHandle->pI2Cx->CR1 |= tempreg;
+
+        //initialize
+        // Controller Initialization
+        // W/~R
+        pI2CHandle->pI2Cx->CR2 |= 1<<I2C_CR2_RD_WRN;
+        //pI2CHandle->pI2Cx->CR2 &= ~(1<<I2C_CR2_RD_WRN);
+
+        // NBYTE
+        pI2CHandle->pI2Cx->CR2 &=  ~(0xFF<<I2C_CR2_NBYTES);
+        pI2CHandle->pI2Cx->CR2 |=   (Len<<I2C_CR2_NBYTES);
+
+        //autoend = 1; 
+        // TODO: autoend = 0; 
+        pI2CHandle->pI2Cx->CR2 |= (1<<I2C_CR2_AUTOEND);
+
+        if(Len <= 255){ 
+            pI2CHandle->pI2Cx->CR2 &= ~(1<<I2C_CR2_RELOAD);
+        }
+        else{
+            pI2CHandle->pI2Cx->CR2 |= (1<<I2C_CR2_RELOAD);
+        }
+
+        // Configure target address
+
+        if(pI2CHandle->I2C_Config.I2C_AddrMode)
+        {
+            //10bits
+            pI2CHandle->pI2Cx->CR2 &= ~(0x3FF<<I2C_CR2_SADD);
+            pI2CHandle->pI2Cx->CR2 |= ( (SlaveAddr&0x3FF)<<I2C_CR2_SADD);
+
+
+        }else
+        {
+            //7bits
+            pI2CHandle->pI2Cx->CR2 &= ~(0x7F<<(I2C_CR2_SADD+1));
+            pI2CHandle->pI2Cx->CR2 |= ( (SlaveAddr&0x7F)<<(I2C_CR2_SADD+1));
+        }
+
+
+        //Enable I2C
+        I2C_PeripheralControl(pI2CHandle, ENABLE);
+        //Implement code to Generate START Condition
+		I2C_GenerateStartCondition(pI2CHandle->pI2Cx);
+	}
+
+	return busystate;
+}
 
 
 /*
