@@ -47,6 +47,8 @@ typedef struct
     uint8_t         DevAddr;             // To store slave/device address
     uint32_t        RxSize;             // To store Rx size
     uint8_t         Sr;                  // To store repeated start value
+    // Non-blocking API for slave
+    
 
 }I2C_Handle_t;
 
@@ -116,14 +118,17 @@ typedef struct
  */
 #define I2C_EV_TX_CMPLT  	 	0
 #define I2C_EV_RX_CMPLT  	 	1
-#define I2C_EV_STOP       		2
+#define I2C_EV_TARGET_STOP       		2
 //#define I2C_ERROR_BERR 	 	3
 //#define I2C_ERROR_ARLO  		4
 //#define I2C_ERROR_AF    		5
 //#define I2C_ERROR_OVR   		6
 //#define I2C_ERROR_TIMEOUT 	7
+
 #define I2C_EV_DATA_REQ         8
 #define I2C_EV_DATA_RCV         9
+#define I2C_EV_TARGET_TRAN      10      
+#define I2C_EV_TARGET_RCV       11
  /***************************************************
  *                      APIs 
  ***************************************************/
@@ -153,6 +158,8 @@ void I2C_ControllerReceiveData(
 uint8_t I2C_ControllerSendDataIT(I2C_Handle_t *pI2CHandle,uint8_t *pTxBuffer, uint32_t Len,uint8_t SlaveAddr,uint8_t Sr);
 uint8_t I2C_ControllerReceiveDataIT(I2C_Handle_t *pI2CHandle,uint8_t *pRxBuffer, uint32_t Len, uint8_t SlaveAddr,uint8_t Sr);
 
+void I2C_SlaveSendData(I2C_RegDef_t *pI2Cx, uint8_t data);
+uint8_t I2C_SlaveReceiveData(I2C_RegDef_t *pI2Cx);
 
 /*
 Other peripheral control API
@@ -175,6 +182,7 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle);
 
 
 
+/* INC_STM32F746XX_I2C_H_ */
+#endif 
 
-#endif /* INC_STM32F746XX_I2C_H_ */
-
+ 
