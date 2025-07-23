@@ -32,7 +32,7 @@ volatile uint8_t rcvStop = 0;
 /*This flag will be set in the interrupt handler of the Arduino interrupt GPIO */
 volatile uint8_t dataAvailable = 0;
 
-void delay(void)
+static void delay(void)
 {
 	for(uint32_t i = 0 ; i < 500000/2 ; i ++);
 }
@@ -90,7 +90,7 @@ void Slave_GPIO_InterruptPinInit(void)
 
 
 
-int main(void)
+int main_spi(void)
 {
 
 	uint8_t dummy = 0xff;

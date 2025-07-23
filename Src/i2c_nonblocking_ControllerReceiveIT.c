@@ -5,6 +5,7 @@
  *      Author: s0953
  */
 #include "stm32f746xx.h"
+#include <stdio.h>
 static void delay(void)
 {
 	for(uint32_t i = 0 ; i < 500000/2 ; i ++);
@@ -53,10 +54,8 @@ static uint8_t interrupt_flag = 0;
 
 #define READ_COMMAND_LENGTH 0X51
 #define READ_COMMAND_DATA   0x52
-int main_i2crx(void)
-{
 
-	I2C_Handle_t I2C_Handle = {
+I2C_Handle_t I2C_Handle = {
 		.pI2Cx = I2C1,
 		.I2C_Config = {
 			.I2C_AddrMode 	= I2C_ADDRMODE_7BIT,
@@ -66,6 +65,11 @@ int main_i2crx(void)
 		}
 	};
 
+int main(void)
+{
+
+	
+
 
 	// btn interrupt
 	GPIO_Interrupt_Inits();
@@ -73,33 +77,59 @@ int main_i2crx(void)
 	I2C1_GPIO_Inits();
 	// I2C Init
 	I2C_Init(&I2C_Handle);
+	
+	I2C_IRQITConfig(IRQ_NO_I2C1_EV, ENABLE);
 
-	uint8_t Len = 10;
-    char length;
+
+
+
 	char pRxBuff[255];
 
-    uint8_t command;
+    uint8_t commandcode;
+	uint8_t len;
 	for(;;)
 	{
 		if(interrupt_flag)
 		{
 			interrupt_flag = 0;
-            command = READ_COMMAND_LENGTH;
-			I2C_ControllerSendData(&I2C_Handle,&command,1, 0x68, ENABLE);
-            I2C_ControllerReceiveData(&I2C_Handle,(uint8_t *)(&length),1, 0x68, ENABLE);
+			commandcode = 0x51;
 
-            command = READ_COMMAND_DATA;
-            I2C_ControllerSendData(&I2C_Handle,&command,1, 0x68, ENABLE);
-            I2C_ControllerReceiveData(&I2C_Handle,(uint8_t *)pRxBuff,length, 0x68, ENABLE);
+
+			while(I2C_ControllerSendDataIT(&I2C_Handle,&commandcode,1,0x68,ENABLE) != I2C_READY);
+
+			while(I2C_ControllerReceiveDataIT(&I2C_Handle,&len,1,0x68,ENABLE)!= I2C_READY);
+
+
+
+			commandcode = 0x52;
+			while(I2C_ControllerSendDataIT(&I2C_Handle,&commandcode,1,0x68,ENABLE) != I2C_READY);
+
+
+			while(I2C_ControllerReceiveDataIT(&I2C_Handle,(uint8_t*)pRxBuff,len,0x68,ENABLE)!= I2C_READY);
 		}
 	}
 	return 0;
 }
 
 
-/*
-void EXTI15_10_IRQHandler(void){
+void I2C_ApplicationEventCallback(I2C_Handle_t *pI2CHandle, uint8_t AppEv)
+{
+	
+	if(AppEv == I2C_EV_TX_CMPLT)
+	{
+
+	}
+	if(AppEv == I2C_EV_RX_CMPLT)
+	{
+		printf("%s", pI2CHandle->pRxBuffer);
+	}
+}
+void I2C1_EV_IRQHandler(void)
+{
+	I2C_EV_IRQHandling(&I2C_Handle);
+}
+void EXTI15_10_IRQHandler(void)
+{
 	GPIO_IRQHandling(GPIO_PIN_NO_11);// clear the pending register
 	interrupt_flag = 1;
 }
-*/

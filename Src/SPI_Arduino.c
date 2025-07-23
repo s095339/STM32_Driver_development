@@ -53,7 +53,7 @@ static void SPI2_GPIO_Inits(void){
 	GPIO_Init(&SPIPinsI);
 }
 
-int interrupt_flag = 0;
+static  int interrupt_flag = 0;
 int main__spi(){
 
 
@@ -125,9 +125,9 @@ int main__spi(){
 	return 0;
 }
 
-
+/*
 void EXTI15_10_IRQHandler(void){
 	GPIO_IRQHandling(GPIO_PIN_NO_11);// clear the pending register
 	interrupt_flag = 1;
 }
-
+*/
