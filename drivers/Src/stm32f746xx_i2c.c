@@ -151,16 +151,20 @@ void I2C_Init(I2C_Handle_t *pI2CHandle)
     {
         //10bits
         tempreg |= 1 << I2C_OAR1_OA1MODE;
+        tempreg |= 1 << I2C_OAR1_OA1EN;
         tempreg |= (pI2CHandle->I2C_Config.I2C_DeviceAddress & 0x3FF) << I2C_OAR1_OA1;
     }else
     {
         //7bits
         tempreg &= ~(1 << I2C_OAR1_OA1MODE);
+        tempreg |= 1 << I2C_OAR1_OA1EN;
         tempreg |= (pI2CHandle->I2C_Config.I2C_DeviceAddress & 0x7F) << (I2C_OAR1_OA1+1);
     }
 
     pI2CHandle->pI2Cx->OAR1 = tempreg;
 
+    // Interrupt enable for possible slave transcation
+    pI2CHandle->pI2Cx->CR2 |= I2C_CR1_ADDRIE;
 }
 void I2C_DeInit(I2C_Handle_t *pI2CHandle){
     
@@ -453,6 +457,15 @@ uint8_t I2C_ControllerReceiveDataIT(I2C_Handle_t *pI2CHandle,uint8_t *pRxBuffer,
 }
 
 
+void I2C_SlaveSendData(I2C_RegDef_t *pI2Cx, uint8_t data)
+{
+    pI2Cx->TXDR = data;
+}
+uint8_t I2C_SlaveReceiveData(I2C_RegDef_t *pI2Cx)
+{
+    return pI2Cx->RXDR;
+}
+
 /*
 Other peripheral control API
 */
@@ -624,18 +637,17 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
         //Notify the application that STOP is detected
 
         //check autoend
-        if( (pI2CHandle->pI2Cx->CR2 & (1 << I2C_CR2_AUTOEND)) == (1 << I2C_CR2_AUTOEND))
-        {
-            //do nothing
-        }
-        else{
-            //write stop = 1
-            I2C_GenerateStopCondition(pI2CHandle->pI2Cx);
-        }
+        
+       
 
 
         if(pI2CHandle->TxRxState == I2C_BUSY_IN_TX)
         {
+            
+            if( !( (pI2CHandle->pI2Cx->CR2 & (1 << I2C_CR2_AUTOEND)) == (1 << I2C_CR2_AUTOEND) ))
+            {
+                I2C_GenerateStopCondition(pI2CHandle->pI2Cx);
+            }
             uint32_t tempreg = 0;
             // disable TXIS interrupt
             tempreg |= 1 << I2C_CR1_TXIE; 
@@ -652,24 +664,42 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
             //I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_TX_CMPLT);
 
             I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_TX_CMPLT);
-        }
-        if(pI2CHandle->TxRxState == I2C_BUSY_IN_RX)
+        }else if(pI2CHandle->TxRxState == I2C_BUSY_IN_RX)
         {
-
+            if( !( (pI2CHandle->pI2Cx->CR2 & (1 << I2C_CR2_AUTOEND)) == (1 << I2C_CR2_AUTOEND) ))
+            {
+                I2C_GenerateStopCondition(pI2CHandle->pI2Cx);
+            }
             uint32_t tempreg = 0;
-            // open TXIS interrupt
+            // disable RXNE interrupt
             tempreg |= 1 << I2C_CR1_RXIE; 
-            // open TC and TCR interrupt
+            // disable TC and TCR interrupt
             tempreg |= 1 << I2C_CR1_TCIE;
-            // open STOPIE 
+            // disable STOPIE 
             tempreg |= 1 << I2C_CR1_STOPIE;
-            //TODO: open bus error, overrun/underrun and timeout error
+            //TODO: disable bus error, overrun/underrun and timeout error
             //tempreg |= 1 << I2C_CR1_ERRIE;
 
             pI2CHandle->pI2Cx->CR1 &= ~(tempreg);
             //I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_RX_CMPLT);
 
             I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_RX_CMPLT);
+        }else
+        {
+            /*
+             * Target mode
+             * STOPF is generate by Controller
+             */
+            uint32_t tempreg = 0;
+            // disable RXNE interrupt
+            tempreg |= 1 << I2C_CR1_RXIE; 
+            // disable TXIS interrupt
+            tempreg |= 1 << I2C_CR1_TXIE;
+            // disable STOPIE 
+            tempreg |= 1 << I2C_CR1_STOPIE;
+
+            pI2CHandle->pI2Cx->CR1 &= ~(tempreg);
+            I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_TARGET_STOP);
         }
         
         pI2CHandle->TxRxState = I2C_READY;
@@ -677,6 +707,46 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
         
     }
 
+    // ADDR (target mode) ========================
+    MASK = (1 << I2C_CR1_ADDRIE);
+    if((EV_EN & MASK) == MASK && I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_ADDR_FLAG))
+    {
+        // STM32 go into Target Mode
+        
+        //clear 
+        
+        //check ADDR (7bits)
+        uint32_t ADDR_MASK = 0x3F;
+        
+        if( ((pI2CHandle->pI2Cx->ISR >>I2C_ISR_ADDCODE)&ADDR_MASK) == ((pI2CHandle->pI2Cx->OAR1 >> I2C_OAR1_OA1)&ADDR_MASK))
+        {
+            uint32_t DIR_MASK = 1 << I2C_ISR_DIR;
+            if((pI2CHandle->pI2Cx->ISR & DIR_MASK) == DIR_MASK)
+            {
+                //  Read transfer, target enters transmitter mode.
+                I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_TARGET_TRAN);
+                // Data flush, flush TXDR
+                pI2CHandle->pI2Cx->ISR |= 1 << I2C_ISR_TXE;
+                // Enable TXIS interrupt
+                pI2CHandle->pI2Cx->CR1 |= 1 << I2C_CR1_TXIE;
+                
+            }
+            else
+            {
+                // Write transfer, target enters receiver mode.
+                I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_TARGET_RCV);
+                // Enable RXNE interrupt
+                pI2CHandle->pI2Cx->CR1 |= 1 << I2C_CR1_RXIE;
+                
+            }
+            // Enable STOPF interrupt
+            pI2CHandle->pI2Cx->CR1 |= 1 << I2C_CR1_STOPIE;
+            
+        }
+        
+        // clear addr interrupt
+        pI2CHandle->pI2Cx->ICR |= 1 << I2C_ICR_ADDRCF;
+    }
     
     // TC ========================================
     MASK = (1 << I2C_CR1_TCIE);
@@ -701,6 +771,7 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
         // Data transmition
         if(pI2CHandle->TxRxState == I2C_BUSY_IN_TX)
         {
+            // Controller mode
             if(pI2CHandle->TxLen > 0)
             {
                 //1. load the data into DR (cleared the TXIS and TXE)
@@ -711,7 +782,15 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
                 if(pI2CHandle->TxLen)
                     pI2CHandle->pTxBuffer++;
             }
-        }
+        }else{
+            // Target mode
+            /* 
+            明明沒有去設定 pI2CHandle->TxRxState = I2C_BUSY_IN_TX卻發生中斷？
+            那只有一種可能：現在是target mode的TXIS 中斷
+            */
+
+            I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_DATA_REQ);
+        }   
 
     }
     //RXNE==========================================//
@@ -728,6 +807,13 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
             if(pI2CHandle->RxLen)
                 pI2CHandle->pRxBuffer++;
             
+        }else{
+            // Target mode
+            /* 
+            明明沒有去設定 pI2CHandle->TxRxState = I2C_BUSY_IN_RX卻發生中斷？
+            那只有一種可能：現在是target mode的RXNE 中斷
+            */
+           I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_DATA_RCV);
         }
     }
     
