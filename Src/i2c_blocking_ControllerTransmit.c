@@ -52,7 +52,7 @@ static void I2C1_GPIO_Inits(void){
 
 static uint8_t interrupt_flag = 0;
 
-int main_i2cmastertx(void)
+int main(void)
 {
 
 	I2C_Handle_t I2C_Handle = {
@@ -87,9 +87,9 @@ int main_i2cmastertx(void)
 }
 
 
-/*
+
 void EXTI15_10_IRQHandler(void){
 	GPIO_IRQHandling(GPIO_PIN_NO_11);// clear the pending register
 	interrupt_flag = 1;
 }
-*/
+
