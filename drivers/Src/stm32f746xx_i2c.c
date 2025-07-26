@@ -9,12 +9,12 @@
 #include "stm32f746xx_i2c.h"
 
 //private 
-uint16_t AHB_presc[] = {2,4,8,16,64,128,256,512};
+
 
 // private function
 static void I2C_GenerateStartCondition(I2C_RegDef_t *pI2Cx);
 static void I2C_GenerateStopCondition(I2C_RegDef_t *pI2Cx);
-static uint32_t RCC_GetI2CCLKValue(I2C_Handle_t *I2C_Handle);
+
 
 
 
@@ -607,62 +607,6 @@ void I2C_IRQPriorityConfig(uint8_t IRQNumber, uint8_t IRQPriority)
 
 
 
-static uint32_t RCC_GetI2CCLKValue(I2C_Handle_t *I2C_Handle)
-{
-
-    // check I2C clock source
-    if(I2C_Handle->I2C_Config.I2C_AddrMode == I2C_CLKSRC_HSI)
-        return 16000000;
-
-
-    //system clock source
-    uint32_t    pclk1;
-    uint8_t     clksrc, temp;
-    uint32_t    SystemClk;
-    uint16_t    ahbp,apb1p; //ahb prescalar
-    // To check SWS (CFGR[3:2]), System clock switch status這邊決定system clock的來源是甚麼
-    clksrc = (RCC->CFGR >> 2) & 0x3;
-    if(clksrc == 0) //HSI
-    {
-        SystemClk = 16000000;
-    }else if(clksrc == 1) //HSE
-    {
-        SystemClk = 80000000;//我不知道 我亂掰的
-    }else
-    {
-        //SystemClk = RCC_GetPLLOutputClk();
-    }
-    if(I2C_Handle->I2C_Config.I2C_AddrMode == I2C_CLKSRC_SYSCLK)
-        return SystemClk;
-
-    // get the CFGR[7:4] ,HPRE (AHB prescaler)
-    
-    temp = (RCC->CFGR >> 4) & 0xF;
-
-    if(temp<8)
-    {
-        ahbp = 1;
-    }else
-    {
-        ahbp = AHB_presc[temp-8];
-    }
-
-    // get the CFGR[12:10] , PPRE1 (APB Low-speed prescaler (APB1))
-
-    temp = (RCC->CFGR >> 4) & 0xF;
-
-    if(temp<4)
-    {
-        apb1p = 1;
-    }else
-    {
-        apb1p = AHB_presc[temp-4];
-    }
-    
-    pclk1 = (SystemClk/ahbp)/apb1p;
-
-    return pclk1;
-}
 
 void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle)
 {
