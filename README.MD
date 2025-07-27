@@ -2,13 +2,11 @@
 Develop drivers of STM32F746g-disco from scratch
 
 ## TODO List
-- [ ] uncheck
+
 - [x] GPIO
-- [ ] I2C 
-- [ ] SPI
-- [ ] USART
-- [ ] TIMER
-- [ ] CAN
-- [ ] LCD-TFT
-- [ ] LTDC
+- [x] I2C 
+- [x] SPI
+- [x] USART
+- [x] interrupt
+- [] TIMER
 

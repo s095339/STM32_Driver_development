@@ -111,6 +111,7 @@
 #define I2C3_BASEADDR           (APB1PERIPH_BASEADDR + 0x5C00UL)
 #define I2C4_BASEADDR           (APB1PERIPH_BASEADDR + 0x6000UL)
 
+#define UART7_BASEADDR          (APB1PERIPH_BASEADDR + 0x7800UL)
 #define UART8_BASEADDR          (APB1PERIPH_BASEADDR + 0x7C00UL)
 
 /*
@@ -271,6 +272,22 @@ typedef struct {
     volatile uint32_t TXDR;       // 0x28
 }I2C_RegDef_t;
 
+//UART
+
+typedef struct
+{
+    volatile uint32_t CR1;      // 0x00: Control register 1
+    volatile uint32_t CR2;      // 0x04: Control register 2
+    volatile uint32_t CR3;      // 0x08: Control register 3
+    volatile uint32_t BRR;      // 0x0C: Baud rate register
+    volatile uint32_t GTPR;     // 0x10: Guard time and prescaler register
+    volatile uint32_t RTOR;     // 0x14: Receiver timeout register
+    volatile uint32_t RQR;      // 0x18: Request register
+    volatile uint32_t ISR;      // 0x1C: Interrupt & status register
+    volatile uint32_t ICR;      // 0x20: Interrupt flag clear register
+    volatile uint32_t RDR;      // 0x24: Receive data register
+    volatile uint32_t TDR;      // 0x28: Transmit data register
+}UART_RegDef_t;
 
 /****************************Peripheral register bit definition**************************/
 
@@ -425,8 +442,135 @@ typedef enum {
 } I2C_ICR_Bit_t;
 
 /****************************
- *    bit definition    *
+ *   UART bit definition    *
  ****************************/
+enum {
+    UART_CR1_UE    = 0,
+    UART_CR1_RE    = 2,
+    UART_CR1_TE    = 3,
+    UART_CR1_IDLEIE = 4,
+    UART_CR1_RXNEIE = 5,
+    UART_CR1_TCIE  = 6,
+    UART_CR1_TXEIE = 7,
+    UART_CR1_PEIE  = 8,
+    UART_CR1_PS    = 9,
+    UART_CR1_PCE   = 10,
+    UART_CR1_WAKE  = 11,
+    UART_CR1_M0    = 12,
+    UART_CR1_MME   = 13,
+    UART_CR1_CMIE  = 14,
+    UART_CR1_OVER8 = 15,
+    UART_CR1_DEDT0 = 16,
+    UART_CR1_DEDT1 = 17,
+    UART_CR1_DEDT2 = 18,
+    UART_CR1_DEDT3 = 19,
+    UART_CR1_DEDT4 = 20,
+    UART_CR1_DEAT0 = 21,
+    UART_CR1_DEAT1 = 22,
+    UART_CR1_DEAT2 = 23,
+    UART_CR1_DEAT3 = 24,
+    UART_CR1_DEAT4 = 25,
+    UART_CR1_RTOIE = 26,
+    UART_CR1_EOBIE = 27,
+    UART_CR1_M1    = 28
+};
+
+enum {
+    UART_CR2_ADD0    = 0,   // ADD[3:0] LSB
+    UART_CR2_ADD4    = 4,   // ADD[7:4] LSB
+    UART_CR2_LBDL    = 5,
+    UART_CR2_LBDIE   = 6,
+    UART_CR2_LBCL    = 8,
+    UART_CR2_CPHA    = 9,
+    UART_CR2_CPOL    = 10,
+    UART_CR2_CLKEN   = 11,
+    UART_CR2_STOP    = 12,  // STOP[1:0] LSB
+    UART_CR2_LINEN   = 14,
+    UART_CR2_SWAP    = 15,
+    UART_CR2_RXINV   = 16,
+    UART_CR2_TXINV   = 17,
+    UART_CR2_DATAINV = 18,
+    UART_CR2_MSBFIRST = 19,
+    UART_CR2_ABREN   = 20,
+    UART_CR2_ABRMODE = 21,  // ABRMODE[1:0] LSB
+    UART_CR2_RTOEN   = 23
+};
+
+enum {
+    UART_CR3_EIE     = 0,
+    UART_CR3_IREN    = 1,
+    UART_CR3_IRLP    = 2,
+    UART_CR3_HDSEL   = 3,
+    UART_CR3_NACK    = 4,
+    UART_CR3_SCEN    = 5,
+    UART_CR3_DMAR    = 6,
+    UART_CR3_DMAT    = 7,
+    UART_CR3_RTSE    = 8,
+    UART_CR3_CTSE    = 9,
+    UART_CR3_CTSIE   = 10,
+    UART_CR3_ONEBIT  = 11,
+    UART_CR3_OVRDIS  = 12,
+    UART_CR3_DDRE    = 13,
+    UART_CR3_DEM     = 14,
+    UART_CR3_DEP     = 15,
+    UART_CR3_SCARCNT = 17  // SCARCNT[2:0]，LSB 位於 bit17
+};
+
+enum {
+    UART_GTPR_PSC = 0,   // PSC[7:0]
+    UART_GTPR_GT  = 8    // GT[7:0]
+};
+
+enum {
+    UART_RTOR_RTO   = 0,  // RTO[23:0]
+    UART_RTOR_BLEN  = 24  // BLEN[7:0]
+};
+
+enum {
+    UART_RQR_ABRRQ = 0,
+    UART_RQR_SBKRQ = 1,
+    UART_RQR_MMRQ  = 2,
+    UART_RQR_RXFRQ = 3,
+    UART_RQR_TXFRQ = 4
+};
+
+enum {
+    UART_ISR_PE     = 0,
+    UART_ISR_FE     = 1,
+    UART_ISR_NE     = 2,
+    UART_ISR_ORE    = 3,
+    UART_ISR_IDLE   = 4,
+    UART_ISR_RXNE   = 5,
+    UART_ISR_TC     = 6,
+    UART_ISR_TXE    = 7,
+    UART_ISR_LBDF   = 8,
+    UART_ISR_CTSIF  = 9,
+    UART_ISR_CTS    = 10,
+    UART_ISR_RTOF   = 11,
+    UART_ISR_EOBF   = 12,
+    UART_ISR_ABRE   = 14,
+    UART_ISR_ABRF   = 15,
+    UART_ISR_BUSY   = 16,
+    UART_ISR_CMF    = 17,
+    UART_ISR_SBKF   = 18,
+    UART_ISR_RWU    = 19,
+    UART_ISR_TEACK  = 21
+};
+
+enum {
+    UART_ICR_PECF   = 0,
+    UART_ICR_FECF   = 1,
+    UART_ICR_NCF    = 2,
+    UART_ICR_ORECF  = 3,
+    UART_ICR_IDLECF = 4,
+    UART_ICR_TCCF   = 6,
+    UART_ICR_LBDCF  = 8,
+    UART_ICR_CTSCF  = 9,
+    UART_ICR_RTOCF  = 11,
+    UART_ICR_EOBCF  = 12,
+    UART_ICR_CMCF   = 17
+};
+
 
 
 /****************************Peripheral definitions **************************/
@@ -463,6 +607,14 @@ typedef enum {
 #define I2C3        ((I2C_RegDef_t *)I2C3_BASEADDR)
 #define I2C4        ((I2C_RegDef_t *)I2C4_BASEADDR)
 
+#define USART1       ((UART_RegDef_t *)USART1_BASEADDR)
+#define USART2       ((UART_RegDef_t *)USART2_BASEADDR)
+#define USART3       ((UART_RegDef_t *)USART3_BASEADDR)
+#define UART4       ((UART_RegDef_t *)UART4_BASEADDR)
+#define UART5       ((UART_RegDef_t *)UART5_BASEADDR)
+#define USART6       ((UART_RegDef_t *)USART6_BASEADDR)
+#define UART7       ((UART_RegDef_t *)UART7_BASEADDR)
+#define UART8       ((UART_RegDef_t *)UART8_BASEADDR)
 /*
 * Clock Enable Macros for GPIOx peripherals
 */
@@ -609,6 +761,20 @@ typedef enum {
 #define I2C3_REG_RESET()   do{ (RCC->APB1RSTR |=(1<<23) ); (RCC->APB1RSTR &= ~(1<<23) ); }while(0)
 #define I2C4_REG_RESET()   do{ (RCC->APB1RSTR |=(1<<24) ); (RCC->APB1RSTR &= ~(1<<24) ); }while(0)
 
+//uart reset
+
+#define USART1_REG_RESET() do{RCC->APB2RSTR |=(1<<4) ); (RCC->APB1RSTR &= ~(1<<4) }
+#define USART6_REG_RESET() do{RCC->APB2RSTR |=(1<<5) ); (RCC->APB1RSTR &= ~(1<<5) }
+
+#define USART2_REG_RESET() do{RCC->APB1RSTR |=(1<<17) ); (RCC->APB1RSTR &= ~(1<<17) }
+#define USART3_REG_RESET() do{RCC->APB1RSTR |=(1<<18) ); (RCC->APB1RSTR &= ~(1<<18) }
+#define UART4_REG_RESET()  do{RCC->APB1RSTR |=(1<<19) ); (RCC->APB1RSTR &= ~(1<<19) }
+#define UART5_REG_RESET()  do{RCC->APB1RSTR |=(1<<20) ); (RCC->APB1RSTR &= ~(1<<20) }
+
+#define UART7_REG_RESET()  do{RCC->APB1RSTR |=(1<<30) ); (RCC->APB1RSTR &= ~(1<<30) }
+#define UART8_REG_RESET()  do{RCC->APB1RSTR |=(1<<31) ); (RCC->APB1RSTR &= ~(1<<31) }
+
+
 //GPIO useful macro
 //
 #define GPIO_BASEADDR_TO_CODE(x)    ((x==GPIOA)?0:\
@@ -670,6 +836,17 @@ typedef enum {
 #define IRQ_NO_I2C4_EV      95 
 #define IRQ_NO_I2C4_ER      96 
 
+// UART
+
+#define IRQ_NO_USART1       37
+#define IRQ_NO_USART2       38
+#define IRQ_NO_USART3       39
+#define IRQ_NO_UART4        52
+#define IRQ_NO_UART5        53
+#define IRQ_NO_USART6       71
+#define IRQ_NO_UART7        82
+#define IRQ_NO_UART8        83
+
 //Macros for all possible Interrupt priority
 #define NVIC_IRQ_RRI0       0
 #define NVIC_IRQ_RRI15      15
@@ -682,5 +859,7 @@ typedef enum {
 #include "stm32f746xx_gpio.h"
 #include "stm32f746xx_spi.h"
 #include "stm32f746xx_i2c.h"
+#include "stm32f746xx_uart.h"
+#include "stm32f746xx_rcc.h"
 /* INC_STM32F746XX_H_ */
 #endif 
