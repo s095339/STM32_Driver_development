@@ -395,11 +395,22 @@ void UART_IRQPriorityConfig(uint8_t IRQNumber, uint32_t IRQPriority)
 }
 void UART_IRQHandling(UART_Handle_t *pHandle)
 {
-    
-
-    if( UART_GetFlagStatus(pHandle->pUARTx, UART_RXNE_FLAG) && pHandle->pUARTx->CR1 & 1<<UART_CR1_RXNEIE )
+    if( UART_GetFlagStatus(pHandle->pUARTx, UART_TC_FLAG) && (pHandle->pUARTx->CR1 & 1<<UART_CR1_TCIE) )
     {
-        if(pHandle->RxState == UART_BUSY_IN_RX && (pHandle->RxLen))
+        UART_ClearFlag(pHandle->pUARTx, UART_TCCF_CRFLAG);
+        
+		//Implement the code to enable interrupt for TC 
+		pHandle->pUARTx->CR1 &= ~(1 << UART_CR1_TCIE);	
+        pHandle->TxState = UART_READY;
+    }
+
+    if( UART_GetFlagStatus(pHandle->pUARTx, UART_RXNE_FLAG) && (pHandle->pUARTx->CR1 & 1<<UART_CR1_RXNEIE) )
+    {
+        if(pHandle->RxState == UART_BUSY_IN_RX)
+        {   
+            
+
+            if(pHandle->RxLen>0)
         {
             //Check the UART_WordLength to decide whether we are going to receive 9bit of data in a frame or 8 bit
             if(pHandle->UART_Config.UART_WordLength == UART_WORDLEN_9BITS)
@@ -438,7 +449,7 @@ void UART_IRQHandling(UART_Handle_t *pHandle)
                     //No parity is used , so all 8bits will be of user data
 
                     //read 8 bits from DR
-                    *(pHandle->pRxBuffer) = (pHandle->pUARTx->RDR & (uint8_t)0xFF );
+                        *(pHandle->pRxBuffer) =(uint8_t)(pHandle->pUARTx->RDR & (uint8_t)0xFF );
                     
                 }
                 else
@@ -446,118 +457,35 @@ void UART_IRQHandling(UART_Handle_t *pHandle)
                     //Parity is used, so , 7 bits will be of user data and 1 bit is parity
 
                     //read only 7 bits , hence mask the DR with 0X7F
-                    *(pHandle->pRxBuffer) = ((uint8_t) pHandle->pUARTx->RDR & (uint8_t)0X7F);
+                        *(pHandle->pRxBuffer) = (uint8_t)(pHandle->pUARTx->RDR & (uint8_t)0X7F);
                     
                 }
 
                 //increment the pRxBuffer
                 pHandle->pRxBuffer++;
                 pHandle->RxLen--;
+                }
             }
 
-            if(pHandle->RxLen==0)
-            {
-                //Implement the code to enable interrupt for TXE
+            if(!pHandle->RxLen){
 		
                 pHandle->pUARTx->CR1 &= ~(1 << UART_CR1_RXNEIE);
-
-                //Implement the code to enable interrupt for TC 
-                
                 pHandle->RxState = UART_READY;
-
                 UART_ApplicationEventCallback(pHandle, UART_EV_RX_COMPLT);
             }
+        
+            
         }
-        /*
-        else if(pHandle->RxState == UART_BUSY_IN_RX && (pHandle->RxLen == UART_RXLEN_UNKNOWN))
-        {
-            //Check the UART_WordLength to decide whether we are going to receive 9bit of data in a frame or 8 bit
-            if(pHandle->UART_Config.UART_WordLength == UART_WORDLEN_9BITS)
-            {
-                //We are going to receive 9bit data in a frame
-
-                //check are we using UART_ParityControl control or not
-                if(pHandle->UART_Config.UART_ParityControl == UART_PARITY_DISABLE)
-                {
-                    //TODO
-                }
-                else
-                {
-                    //Parity is used, so, 8bits will be of user data and 1 bit is parity
-                    uint8_t temp = (pHandle->pUARTx->RDR  & (uint8_t)0xFF);
-                   
-                    *(pHandle->pRxBuffer) = temp;
-                    
-
-
-                    
-                    // end of reception
-                    if( (char)temp == '\n' || (char)temp == '\0'  )
-                    {
-                        //Implement the code to enable interrupt for TXE
-		
-                        pHandle->pUARTx->CR1 &= ~(1 << UART_CR1_RXNEIE);
-
-                        //Implement the code to enable interrupt for TC 
-                      
-                        pHandle->RxState = UART_READY;
-
-                        UART_ApplicationEventCallback(pHandle, UART_EV_RX_COMPLT);
-                    }
-
-                    //Increment the pRxBuffer
-                    pHandle->pRxBuffer++;
-                    
-                    
-                }
-            }
-            else
-            {
-                //We are going to receive 8bit data in a frame
-
-                //check are we using UART_ParityControl control or not
-                if(pHandle->UART_Config.UART_ParityControl == UART_PARITY_DISABLE)
-                {
-                    //No parity is used , so all 8bits will be of user data
-
-                    //read 8 bits from DR
-                    uint8_t temp = (pHandle->pUARTx->RDR & (uint8_t)0xFF );
-                    *(pHandle->pRxBuffer) = temp;
-                    // end of reception
-                    // end of reception
-                    if( (char)temp == '\n' || (char)temp == '\0'  )
-                    {
-                        //Implement the code to enable interrupt for TXE
-		
-                        pHandle->pUARTx->CR1 &= ~(1 << UART_CR1_RXNEIE);
-
-                        //Implement the code to enable interrupt for TC 
-                      
-                        pHandle->RxState = UART_READY;
-
-                        UART_ApplicationEventCallback(pHandle, UART_EV_RX_COMPLT);
-                    }
-                }
-                else
-                {
-                   //TODO
-                    
-                }
-
-                //increment the pRxBuffer
-                pHandle->pRxBuffer++;
-            }
-        }
-        */
+        
     }
 
 
     if( UART_GetFlagStatus(pHandle->pUARTx, UART_TXE_FLAG) && pHandle->pUARTx->CR1 & 1<<UART_CR1_TXEIE  )
     {
-        if(pHandle->TxState == UART_BUSY_IN_TX && pHandle->TxLen)
+        if(pHandle->TxState == UART_BUSY_IN_TX )
         {
-
-                        //Check the USART_WordLength item for 9BIT or 8BIT in a frame
+            if(pHandle->TxLen)
+            {               //Check the USART_WordLength item for 9BIT or 8BIT in a frame
             if(pHandle->UART_Config.UART_WordLength == UART_WORDLEN_9BITS)
             {
                 //if 9BIT, load the DR with 2bytes masking the bits other than first 9 bits
@@ -592,10 +520,11 @@ void UART_IRQHandling(UART_Handle_t *pHandle)
             }
             //TODO:７bit mode
 
+            }
 
 
 
-            if(pHandle->TxLen<=0)
+            if(!pHandle->TxLen)
             {
                 //Implement the code to enable interrupt for TXE
 
@@ -607,14 +536,7 @@ void UART_IRQHandling(UART_Handle_t *pHandle)
 
 
 
-    if( UART_GetFlagStatus(pHandle->pUARTx, UART_TC_FLAG) && (pHandle->pUARTx->CR1 & 1<<UART_CR1_TCIE) )
-    {
-        UART_ClearFlag(pHandle->pUARTx, UART_TCCF_CRFLAG);
         
-		//Implement the code to enable interrupt for TC 
-		pHandle->pUARTx->CR1 &= ~(1 << UART_CR1_TCIE);	
-        pHandle->TxState = UART_READY;
-    }
 
 }
 
@@ -628,7 +550,7 @@ void UART_PeripheralControl(UART_RegDef_t *pUARTx, uint8_t EnOrDi)
     else
         pUARTx->CR1 &= ~(1<<UART_CR1_UE);
 }
-uint8_t UART_GetFlagStatus(UART_RegDef_t *pUARTx , uint32_t FlagName)
+uint8_t inline UART_GetFlagStatus(UART_RegDef_t *pUARTx , uint32_t FlagName)
 {
     if(pUARTx->ISR & FlagName)// FlagName 其實就是 bit mask
     {
@@ -636,7 +558,7 @@ uint8_t UART_GetFlagStatus(UART_RegDef_t *pUARTx , uint32_t FlagName)
     }
     return FLAG_RESET;
 }
-void UART_ClearFlag(UART_RegDef_t *pUARTx, uint16_t clearFlag)
+void inline UART_ClearFlag(UART_RegDef_t *pUARTx, uint16_t clearFlag)
 {
     pUARTx->ICR |= clearFlag;
 }
