@@ -336,9 +336,15 @@ uint8_t UART_ReceiveDataIT(UART_Handle_t *pUARTHandle, uint8_t *pRxBuffer, uint3
 		pUARTHandle->pRxBuffer = pRxBuffer;
 		pUARTHandle->RxState = UART_BUSY_IN_RX;
 
-		//Implement the code to enable interrupt for RXNE
+		//clear the garbage data inside the RDR before enabling the interrupt.
+        if (UART_GetFlagStatus(pUARTHandle->pUARTx, UART_RXNE_FLAG))
+        {
+            volatile uint8_t dummy = pUARTHandle->pUARTx->RDR; // 清 RXNE
+        }
+        //Implement the code to enable interrupt for RXNE
 		pUARTHandle->pUARTx->CR1 |= 1 << UART_CR1_RXNEIE;
 
+        
 	}
 
 	return rxstate;
@@ -411,64 +417,64 @@ void UART_IRQHandling(UART_Handle_t *pHandle)
             
 
             if(pHandle->RxLen>0)
-        {
-            //Check the UART_WordLength to decide whether we are going to receive 9bit of data in a frame or 8 bit
-            if(pHandle->UART_Config.UART_WordLength == UART_WORDLEN_9BITS)
             {
-                //We are going to receive 9bit data in a frame
-
-                //check are we using UART_ParityControl control or not
-                if(pHandle->UART_Config.UART_ParityControl == UART_PARITY_DISABLE)
+                //Check the UART_WordLength to decide whether we are going to receive 9bit of data in a frame or 8 bit
+                if(pHandle->UART_Config.UART_WordLength == UART_WORDLEN_9BITS)
                 {
-                    //No parity is used. so, all 9bits will be of user data
+                    //We are going to receive 9bit data in a frame
 
-                    //read only first 9 bits. so, mask the DR with 0x01FF
-                    *((uint16_t*)(pHandle->pRxBuffer)) = (pHandle->pUARTx->RDR  & (uint16_t)0x01FF);
+                    //check are we using UART_ParityControl control or not
+                    if(pHandle->UART_Config.UART_ParityControl == UART_PARITY_DISABLE)
+                    {
+                        //No parity is used. so, all 9bits will be of user data
 
-                    //Now increment the pRxBuffer two times
-                    pHandle->pRxBuffer+=2;
-                    pHandle->RxLen-=2;
+                        //read only first 9 bits. so, mask the DR with 0x01FF
+                        *((uint16_t*)(pHandle->pRxBuffer)) = (pHandle->pUARTx->RDR  & (uint16_t)0x01FF);
+
+                        //Now increment the pRxBuffer two times
+                        pHandle->pRxBuffer+=2;
+                        pHandle->RxLen-=2;
+                    }
+                    else
+                    {
+                        //Parity is used, so, 8bits will be of user data and 1 bit is parity
+                        *(pHandle->pRxBuffer) = (pHandle->pUARTx->RDR  & (uint8_t)0xFF);
+                        
+                        //Increment the pRxBuffer
+                        pHandle->pRxBuffer++;
+                        pHandle->RxLen--;
+                    }
                 }
                 else
                 {
-                    //Parity is used, so, 8bits will be of user data and 1 bit is parity
-                    *(pHandle->pRxBuffer) = (pHandle->pUARTx->RDR  & (uint8_t)0xFF);
-                    
-                    //Increment the pRxBuffer
+                    //We are going to receive 8bit data in a frame
+
+                    //check are we using UART_ParityControl control or not
+                    if(pHandle->UART_Config.UART_ParityControl == UART_PARITY_DISABLE)
+                    {
+                        //No parity is used , so all 8bits will be of user data
+
+                        //read 8 bits from DR
+                        *(pHandle->pRxBuffer) =(uint8_t)(pHandle->pUARTx->RDR & (uint8_t)0xFF );
+                        
+                    }
+                    else
+                    {
+                        //Parity is used, so , 7 bits will be of user data and 1 bit is parity
+
+                        //read only 7 bits , hence mask the DR with 0X7F
+                        *(pHandle->pRxBuffer) = (uint8_t)(pHandle->pUARTx->RDR & (uint8_t)0X7F);
+                        
+                    }
+
+                    //increment the pRxBuffer
                     pHandle->pRxBuffer++;
                     pHandle->RxLen--;
                 }
             }
-            else
-            {
-                //We are going to receive 8bit data in a frame
-
-                //check are we using UART_ParityControl control or not
-                if(pHandle->UART_Config.UART_ParityControl == UART_PARITY_DISABLE)
-                {
-                    //No parity is used , so all 8bits will be of user data
-
-                    //read 8 bits from DR
-                        *(pHandle->pRxBuffer) =(uint8_t)(pHandle->pUARTx->RDR & (uint8_t)0xFF );
-                    
-                }
-                else
-                {
-                    //Parity is used, so , 7 bits will be of user data and 1 bit is parity
-
-                    //read only 7 bits , hence mask the DR with 0X7F
-                        *(pHandle->pRxBuffer) = (uint8_t)(pHandle->pUARTx->RDR & (uint8_t)0X7F);
-                    
-                }
-
-                //increment the pRxBuffer
-                pHandle->pRxBuffer++;
-                pHandle->RxLen--;
-                }
-            }
 
             if(!pHandle->RxLen){
-		
+                
                 pHandle->pUARTx->CR1 &= ~(1 << UART_CR1_RXNEIE);
                 pHandle->RxState = UART_READY;
                 UART_ApplicationEventCallback(pHandle, UART_EV_RX_COMPLT);
@@ -486,40 +492,40 @@ void UART_IRQHandling(UART_Handle_t *pHandle)
         {
             if(pHandle->TxLen)
             {               //Check the USART_WordLength item for 9BIT or 8BIT in a frame
-            if(pHandle->UART_Config.UART_WordLength == UART_WORDLEN_9BITS)
-            {
-                //if 9BIT, load the DR with 2bytes masking the bits other than first 9 bits
-                uint16_t *pdata = (uint16_t*)( pHandle->pTxBuffer);
-                pHandle->pUARTx->TDR = (*pdata & (uint16_t)0x01FF);
-
-                //check for USART_ParityControl
-                if(pHandle->UART_Config.UART_ParityControl == UART_PARITY_DISABLE)
+                if(pHandle->UART_Config.UART_WordLength == UART_WORDLEN_9BITS)
                 {
-                    //No parity is used in this transfer. so, 9bits of user data will be sent
-                    //Implement the code to increment pTxBuffer twice
-                    //因為你可能真的要傳9bit
-                    pHandle->pTxBuffer+=2;
-                    pHandle->TxLen-=2;
+                    //if 9BIT, load the DR with 2bytes masking the bits other than first 9 bits
+                    uint16_t *pdata = (uint16_t*)( pHandle->pTxBuffer);
+                    pHandle->pUARTx->TDR = (*pdata & (uint16_t)0x01FF);
+
+                    //check for USART_ParityControl
+                    if(pHandle->UART_Config.UART_ParityControl == UART_PARITY_DISABLE)
+                    {
+                        //No parity is used in this transfer. so, 9bits of user data will be sent
+                        //Implement the code to increment pTxBuffer twice
+                        //因為你可能真的要傳9bit
+                        pHandle->pTxBuffer+=2;
+                        pHandle->TxLen-=2;
+                    }
+                    else
+                    {
+                        //Parity bit is used in this transfer . so , 8bits of user data will be sent
+                        //The 9th bit will be replaced by parity bit by the hardware
+                        pHandle->pTxBuffer++;
+                        pHandle->TxLen--;
+                    }
                 }
                 else
                 {
-                    //Parity bit is used in this transfer . so , 8bits of user data will be sent
-                    //The 9th bit will be replaced by parity bit by the hardware
+                    //This is 8bit data transfer
+                    pHandle->pUARTx->TDR = (*(pHandle->pTxBuffer)  & (uint8_t)0xFF);
+
+                    //Implement the code to increment the buffer address
                     pHandle->pTxBuffer++;
                     pHandle->TxLen--;
                 }
-            }
-            else
-            {
-                //This is 8bit data transfer
-                pHandle->pUARTx->TDR = (*(pHandle->pTxBuffer)  & (uint8_t)0xFF);
-
-                //Implement the code to increment the buffer address
-                pHandle->pTxBuffer++;
-                pHandle->TxLen--;
-            }
-            //TODO:７bit mode
-
+                //TODO:７bit mode
+            
             }
 
 
@@ -536,7 +542,7 @@ void UART_IRQHandling(UART_Handle_t *pHandle)
 
 
 
-        
+    
 
 }
 
