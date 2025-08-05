@@ -13,6 +13,71 @@
 #include <stddef.h>
 #include <string.h>
 /************************　 Processor Specific Details *******************/
+#include <stdint.h>
+
+#define SystemCoreClock 16000000UL
+/* CoreDebug base address */
+#define COREDEBUG_BASE      (0xE000EDF0UL)
+#define DWT_BASE            (0xE0001000UL)
+
+/* CoreDebug Register Structure */
+typedef struct
+{
+    volatile uint32_t DHCSR;    /* 0x00 Debug Halting Control and Status Register */
+    volatile uint32_t DCRSR;    /* 0x04 Debug Core Register Selector Register */
+    volatile uint32_t DCRDR;    /* 0x08 Debug Core Register Data Register */
+    volatile uint32_t DEMCR;    /* 0x0C Debug Exception and Monitor Control Register */
+} CoreDebug_Type;
+
+/* DWT Register Structure */
+typedef struct
+{
+    volatile uint32_t CTRL;       /* 0x00 Control Register */
+    volatile uint32_t CYCCNT;     /* 0x04 Cycle Count Register */
+    volatile uint32_t CPICNT;     /* 0x08 CPI Count Register */
+    volatile uint32_t EXCCNT;     /* 0x0C Exception Overhead Count Register */
+    volatile uint32_t SLEEPCNT;   /* 0x10 Sleep Count Register */
+    volatile uint32_t LSUCNT;     /* 0x14 LSU Count Register */
+    volatile uint32_t FOLDCNT;    /* 0x18 Folded Instruction Count Register */
+    volatile uint32_t PCSR;       /* 0x1C Program Counter Sample Register */
+    volatile uint32_t COMP0;      /* 0x20 Comparator Register 0 */
+    volatile uint32_t MASK0;      /* 0x24 Mask Register 0 */
+    volatile uint32_t FUNCTION0;  /* 0x28 Function Register 0 */
+    volatile uint32_t RESERVE0;
+
+	volatile uint32_t COMP1;      /* 0x20 Comparator Register 0 */
+	volatile uint32_t MASK1;      /* 0x24 Mask Register 0 */
+	volatile uint32_t FUNCTION1;  /* 0x28 Function Register 0 */
+	volatile uint32_t RESERVE1;
+
+	volatile uint32_t COMP2;      /* 0x20 Comparator Register 0 */
+	volatile uint32_t MASK2;      /* 0x24 Mask Register 0 */
+	volatile uint32_t FUNCTION2;  /* 0x28 Function Register 0 */
+	volatile uint32_t RESERVE2;
+
+	volatile uint32_t COMP3;      /* 0x20 Comparator Register 0 */
+	volatile uint32_t MASK3;      /* 0x24 Mask Register 0 */
+	volatile uint32_t FUNCTION3;  /* 0x28 Function Register 0 */
+	volatile uint32_t RESERVE3;
+
+
+    // 後面還有 COMP1... 不過延遲功能用不到
+} DWT_Type;
+
+/* Memory mapped structure access */
+#define CoreDebug   ((CoreDebug_Type *)COREDEBUG_BASE)
+#define DWT         ((DWT_Type *)DWT_BASE)
+#define DWT_LAR     *((volatile uint32_t*)0xE0001FB0)
+#define DWT_LSR     *((volatile uint32_t*)0xE0001FB4)
+/* DEMCR Register Bit Definitions */
+#define CoreDebug_DEMCR_TRCENA_Pos     24
+#define CoreDebug_DEMCR_TRCENA_Msk     (1UL << CoreDebug_DEMCR_TRCENA_Pos)
+
+/* DWT CTRL Register Bit Definitions */
+#define DWT_CTRL_CYCCNTENA_Pos         0
+#define DWT_CTRL_CYCCNTENA_Msk         (1UL << DWT_CTRL_CYCCNTENA_Pos)
+
+
 //ARM® Cortex®-M7 Devices Generic user guide ch4.2 
 
 //interrupt Set-enable Registers
@@ -792,7 +857,7 @@ enum {
 
 //some generic marcos
 
-#define ENABLE              1
+#define ENABLE              4
 #define DISABLE             0
 #define SET                 ENABLE
 #define RESET               DISABLE
@@ -855,6 +920,10 @@ enum {
 
 //Clock
 #define HSI_CLK_FREQ        16000000 //16M
+
+void delay_ms(uint32_t ms);
+void delay_us(uint32_t us);
+
 
 #include "stm32f746xx_gpio.h"
 #include "stm32f746xx_spi.h"

@@ -201,7 +201,7 @@ void I2C_ControllerSendData(
 )
 {
     //disable interrupt========================
-    
+
     uint32_t tempreg = 0;
     // Interrupt enable for possible slave transcation
     tempreg |= 1 << I2C_CR1_ADDRIE;

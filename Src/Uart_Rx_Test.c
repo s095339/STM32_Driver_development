@@ -24,7 +24,7 @@ static void UART_GPIO_Inits(void){
 	I2CPinsC.GPIO_PinConfig.GPIO_PinOPType = GPIO_OP_TYPE_PP; //i2c需要opendrain
 	I2CPinsC.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_PIN_PU;
 	I2CPinsC.GPIO_PinConfig.GPIO_PinSpeed = GPIO_SPEED_FAST;
-
+	
 	//Tx
 	I2CPinsC.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_NO_6;
 	GPIO_Init(&I2CPinsC);

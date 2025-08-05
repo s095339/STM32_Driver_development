@@ -38,3 +38,5 @@ Thumbs.db
 
 # 如果你使用 STM32CubeMX 並有生成 ioc 檔，請保留：
 !*.ioc
+
+record

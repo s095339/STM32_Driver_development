@@ -23,13 +23,14 @@ PB15 --> MOSI
 
 static void SPI2_GPIO_Inits(void){
 	GPIO_Handle_t SPIPinsB;
+	
 	SPIPinsB.pGPIOx = GPIOB;
 	SPIPinsB.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_ALTFN;
 	SPIPinsB.GPIO_PinConfig.GPIO_PinAltFunMode = 5;
 	SPIPinsB.GPIO_PinConfig.GPIO_PinOPType = GPIO_OP_TYPE_PP;
 	SPIPinsB.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_NO_PUPD;
 	SPIPinsB.GPIO_PinConfig.GPIO_PinSpeed = GPIO_SPEED_FAST;
-
+	
 	//MISO
 	SPIPinsB.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_NO_14;
 	GPIO_Init(&SPIPinsB);
@@ -87,7 +88,7 @@ int main__spi(){
 	SPI2handle.SPIConfig.SPI_CPHA = SPI_CPHA_LOW;
 	SPI2handle.SPIConfig.SPI_SSM = SPI_SSM_DI;
 	SPI_Init(&SPI2handle);
-
+	
 	//SPI_SSIConfig(&SPI2handle,ENABLE);
 	
 	SPI_SSOEConfig(SPI2I2S2, ENABLE);
