@@ -8,6 +8,7 @@
 #include "stm32f746xx.h"
 #include <stdio.h>
 #include "sht2x.h"
+#include "ssd1306.h"
 #include "liquidcrystal_i2c.h"
 //因為有浮點樹運算所以需要打開FPU
 #define CPACR (*(volatile uint32_t*)0xE000ED88)
@@ -85,7 +86,7 @@ int main(void)
 	CPACR |= (0xF << 20);//浮點樹運算開啟
 	//Uart init
 	usart6.pUARTx = USART6;
-	usart6.UART_Config.UART_Baud = UART_STD_BAUD_115200;
+	usart6.UART_Config.UART_Baud = UART_STD_BAUD_9600;
 	usart6.UART_Config.UART_Mode = UART_MODE_TXRX;
 	usart6.UART_Config.UART_NoOfStopBits = UART_STOPBITS_1;
 	usart6.UART_Config.UART_ParityControl = UART_PARITY_DISABLE;
@@ -121,8 +122,25 @@ int main(void)
 	  /* Blink cursor */
 	  HD44780_Blink();
 
-	//
+	//OLED
+	  SSD1306_Init();
+	   SSD1306_GotoXY(0, 0);
+	   SSD1306_Puts("Temp&Humid", &Font_11x18, 1);
+	   SSD1306_GotoXY(0, 30);
+	   SSD1306_Puts("Sensor", &Font_11x18, 1);
+	   SSD1306_UpdateScreen();
 
+	   SSD1306_ScrollLeft(0, 7);
+	   delay_ms(3000);
+	   SSD1306_ScrollRight(0, 7);
+	   delay_ms(3000);
+	   SSD1306_Stopscroll();
+	   delay_ms(3000);
+	   SSD1306_Clear();
+
+	   //SSD1306_DrawBitmap(0, 0, img, 128, 64, 1);
+	   SSD1306_UpdateScreen();
+	   HD44780_Clear();
 	for(;;)
 	{
 		unsigned char buffer[100] = { 0 };
@@ -143,28 +161,38 @@ int main(void)
 		UART_SendData(&usart6, (uint8_t*)buffer, strlen(buffer));
 
 		sprintf(buffer,
-						"%d.%d C, %d.%d F",
+						"%d.%d C",
 						SHT2x_GetInteger(cel), SHT2x_GetDecimal(cel, 1),
 						SHT2x_GetInteger(fah), SHT2x_GetDecimal(fah, 1));
 
-
+		//LCD
 		HD44780_SetCursor(0,0);
 		HD44780_PrintStr(buffer);
 		HD44780_PrintSpecialChar(1);
+		//OLED
+		SSD1306_GotoXY(0, 0);
+	   SSD1306_Puts(buffer, &Font_11x18, 1);
+
+
 
 		sprintf(buffer,
-								"%d.%d K, %d.%d%% RH",
+								"%d.%d%% RH",
 								SHT2x_GetInteger(kel), SHT2x_GetDecimal(kel, 1),
 								SHT2x_GetInteger(rh), SHT2x_GetDecimal(rh, 1));
-
+		//LCD
 		HD44780_Cursor();
 		HD44780_SetCursor(0,1);
 		HD44780_PrintStr(buffer);
 		HD44780_PrintSpecialChar(0);
+		//OLED
+		SSD1306_GotoXY(0, 30);
+		   SSD1306_Puts(buffer, &Font_11x18, 1);
+		   SSD1306_UpdateScreen();
 
 		//delay();
 		//ssd1306_TestAll();
 		//delay();
+
 	}
 	return 0;
 }
