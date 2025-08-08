@@ -42,6 +42,10 @@ uint16_t SHT2x_GetRaw(uint8_t cmd);
 float SHT2x_GetTemperature(uint8_t hold);
 float SHT2x_GetRelativeHumidity(uint8_t hold);
 
+void  SHT2x_GetTemperatureIT(uint8_t hold);
+void  SHT2x_GetRelativeHumidityIT(uint8_t hold);
+
+
 float SHT2x_CelsiusToFahrenheit(float celsius);
 float SHT2x_CelsiusToKelvin(float celsius);
 

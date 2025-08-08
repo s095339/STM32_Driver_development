@@ -43,7 +43,8 @@ typedef struct {
 
 /* Private variable */
 static SSD1306_t SSD1306;
-
+uint8_t dt_1[256];
+uint8_t dt_2[2];
 
 #define SSD1306_RIGHT_HORIZONTAL_SCROLL              0x26
 #define SSD1306_LEFT_HORIZONTAL_SCROLL               0x27
@@ -640,20 +641,25 @@ void ssd1306_I2C_Init() {
 }
 
 void ssd1306_I2C_WriteMulti(uint8_t address, uint8_t reg, uint8_t* data, uint16_t count) {
-uint8_t dt[256];
-dt[0] = reg;
+//uint8_t dt_1[256];
+while(hi2c1.TxRxState != I2C_READY);
+dt_1[0] = reg;
 uint8_t i;
-for(i = 0; i < count; i++)
-dt[i+1] = data[i];
+for(i = 0; i < count; i++)dt_1[i+1] = data[i];
 //HAL_I2C_Master_Transmit(&hi2c1, address, dt, count+1, 10);
-I2C_ControllerSendData(&hi2c1,dt,count+1,address,ENABLE);
+I2C_ControllerSendDataIT(&hi2c1,dt_1,count+1,address,0);
+
 }
 
 
 void ssd1306_I2C_Write(uint8_t address, uint8_t reg, uint8_t data) {
-	uint8_t dt[2];
-	dt[0] = reg;
-	dt[1] = data;
+	//uint8_t dt_2[2];
+	while(hi2c1.TxRxState != I2C_READY);
+	dt_2[0] = reg;
+	dt_2[1] = data;
+
+	delay_ms(10);
 	//HAL_I2C_Master_Transmit(&hi2c1, address, dt, 2, 10);
-	I2C_ControllerSendData(&hi2c1,dt,2,address,ENABLE);
+	//I2C_ControllerSendData(&hi2c1,dt,2,address,ENABLE);
+	I2C_ControllerSendDataIT(&hi2c1,dt_2,2,address,0);
 }

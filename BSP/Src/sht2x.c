@@ -9,10 +9,12 @@
 /* An STM32 HAL library written for the SHT2x temperature/humidity sensor series. */
 /* Libraries by @eepj www.github.com/eepj */
 #include "sht2x.h"
+#include "main.h"
 #ifdef __cplusplus
 extern "C"{
 #endif
-
+uint8_t i2c_rx_data[3] = { 0 }; //used in IT mode
+uint8_t i2c_tx_data = 0; //used in IT mode
 I2C_Handle_t* _sht2x_ui2c;
 static void delay(void)
 {
@@ -43,8 +45,7 @@ uint8_t SHT2x_ReadUserReg(void) {
 	uint8_t val;
 	uint8_t cmd = SHT2x_READ_REG;
 	I2C_ControllerSendData(_sht2x_ui2c, &cmd, 1, SHT2x_I2C_ADDR, ENABLE);
-	delay();
-	delay();
+	//delay_ms();
 	//HAL_I2C_Master_Receive(_sht2x_ui2c, SHT2x_I2C_ADDR << 1, &val, 1, SHT2x_TIMEOUT);
 	I2C_ControllerReceiveData(_sht2x_ui2c, &val, 1, SHT2x_I2C_ADDR, ENABLE);
 	return val;
@@ -58,15 +59,29 @@ uint8_t SHT2x_ReadUserReg(void) {
 uint16_t SHT2x_GetRaw(uint8_t cmd) {
 	uint8_t val[3] = { 0 };
 	//HAL_I2C_Master_Transmit(_sht2x_ui2c, SHT2x_I2C_ADDR << 1, &cmd, 1, SHT2x_TIMEOUT);
-	I2C_ControllerSendData(_sht2x_ui2c, &cmd, 1, SHT2x_I2C_ADDR, ENABLE);
+	I2C_ControllerSendData(_sht2x_ui2c, &cmd, 1, SHT2x_I2C_ADDR, 0);
 	//HAL_I2C_Master_Receive(_sht2x_ui2c, SHT2x_I2C_ADDR << 1, val, 3, SHT2x_TIMEOUT);
-	delay();
-	I2C_ControllerReceiveData(_sht2x_ui2c, val, 3, SHT2x_I2C_ADDR, ENABLE);
-	int i;
+	delay_ms(50);
+	I2C_ControllerReceiveData(_sht2x_ui2c, val, 3, SHT2x_I2C_ADDR, 0);
 	uint16_t ans = 0;
 	ans |= ((uint16_t)val[0] << 8);
 	ans |= (uint16_t)val[1];
 	return ans;
+}
+void SHT2x_GetRawIT(uint8_t cmd) {
+	i2c_tx_data = cmd;
+	//HAL_I2C_Master_Transmit(_sht2x_ui2c, SHT2x_I2C_ADDR << 1, &cmd, 1, SHT2x_TIMEOUT);
+	//portENTER_CRITICAL();
+	while(I2C_ControllerSendDataIT(_sht2x_ui2c, &i2c_tx_data, 1, SHT2x_I2C_ADDR, 0)!=I2C_READY);
+	delay_ms(200);
+	//HAL_I2C_Master_Receive(_sht2x_ui2c, SHT2x_I2C_ADDR << 1, val, 3, SHT2x_TIMEOUT);
+	while(I2C_ControllerReceiveDataIT(_sht2x_ui2c, i2c_rx_data, 3, SHT2x_I2C_ADDR, 0)!=I2C_READY);
+	int a = 2;
+	//portEXIT_CRITICAL();
+	//uint16_t ans = 0;
+	//ans |= ((uint16_t)val[0] << 8);
+	//ans |= (uint16_t)val[1];
+	//return ans;
 }
 
 /**
@@ -80,6 +95,13 @@ float SHT2x_GetTemperature(uint8_t hold) {
 	return -46.85 + 175.72 * temp;
 }
 
+void SHT2x_GetTemperatureIT(uint8_t hold) {
+	uint8_t cmd = (hold ? SHT2x_READ_TEMP_HOLD : SHT2x_READ_TEMP_NOHOLD);
+	SHT2x_GetRawIT(cmd);
+	//float temp = (SHT2x_GetRaw(cmd) / 65536.0);
+	//return -46.85 + 175.72 * temp;
+}
+
 /**
  * @brief Measures and gets the current relative humidity.
  * @param hold Holding mode, 0 for no hold master, 1 for hold master.
@@ -88,6 +110,11 @@ float SHT2x_GetTemperature(uint8_t hold) {
 float SHT2x_GetRelativeHumidity(uint8_t hold) {
 	uint8_t cmd = (hold ? SHT2x_READ_RH_HOLD : SHT2x_READ_RH_NOHOLD);
 	return -6 + 125.00 * (SHT2x_GetRaw(cmd) / 65536.0);
+}
+void SHT2x_GetRelativeHumidityIT(uint8_t hold) {
+	uint8_t cmd = (hold ? SHT2x_READ_RH_HOLD : SHT2x_READ_RH_NOHOLD);
+	SHT2x_GetRawIT(cmd);
+	//return -6 + 125.00 * (SHT2x_GetRaw(cmd) / 65536.0);
 }
 
 /**
