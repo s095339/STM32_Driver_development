@@ -12,14 +12,16 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
-/************************　 Processor Specific Details *******************/
 #include <stdint.h>
+/************************　 Processor Specific Details *******************/
 
-#define SystemCoreClock 16000000UL
+
+extern uint32_t SystemCoreClock;
 /* CoreDebug base address */
 #define COREDEBUG_BASE      (0xE000EDF0UL)
 #define DWT_BASE            (0xE0001000UL)
 
+//#define SystemCoreClock 	(16000000UL)
 /* CoreDebug Register Structure */
 typedef struct
 {
@@ -29,6 +31,16 @@ typedef struct
     volatile uint32_t DEMCR;    /* 0x0C Debug Exception and Monitor Control Register */
 } CoreDebug_Type;
 
+///interrupt priority grouping
+#define SCB_AIRCR     (*(volatile uint32_t*)0xE000ED0C)
+#define SCB_AIRCR_VECTKEY_MASK    (0xFFFFU << 16)
+#define SCB_AIRCR_VECTKEY         (0x5FAU   << 16)
+#define SCB_AIRCR_PRIGROUP_MASK   (0x7U     << 8)
+
+// Priority group 4 = PRIGROUP = 0b100
+#define PRIORITY_GROUP_4          (0x4U << 8)
+
+void NVIC_SetPriorityGrouping_Manual(uint32_t prigroup);
 /* DWT Register Structure */
 typedef struct
 {
@@ -76,8 +88,8 @@ typedef struct
 /* DWT CTRL Register Bit Definitions */
 #define DWT_CTRL_CYCCNTENA_Pos         0
 #define DWT_CTRL_CYCCNTENA_Msk         (1UL << DWT_CTRL_CYCCNTENA_Pos)
-
-
+//開啟符點數
+#define CPACR (*(volatile uint32_t*)0xE000ED88)
 //ARM® Cortex®-M7 Devices Generic user guide ch4.2 
 
 //interrupt Set-enable Registers
