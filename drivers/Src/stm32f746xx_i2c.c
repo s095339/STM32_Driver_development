@@ -368,7 +368,10 @@ uint8_t I2C_ControllerSendDataIT(I2C_Handle_t *pI2CHandle,uint8_t *pTxBuffer, ui
 		pI2CHandle->Sr = Sr;
 
         //Implement the code to enable Interrupt
-
+        if(I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_STOPF_FLAG))
+        {//要是STOP一開始就是1 那就要先清掉
+            pI2CHandle->pI2Cx->ICR |= (1 << I2C_ICR_STOPCF);
+        }
         uint32_t tempreg = 0;
         // open TXIS interrupt
         tempreg |= 1 << I2C_CR1_TXIE; 
@@ -432,7 +435,7 @@ uint8_t I2C_ControllerSendDataIT(I2C_Handle_t *pI2CHandle,uint8_t *pTxBuffer, ui
 uint8_t I2C_ControllerReceiveDataIT(I2C_Handle_t *pI2CHandle,uint8_t *pRxBuffer, uint32_t Len, uint8_t SlaveAddr,uint8_t Sr)
 {
     uint8_t busystate = pI2CHandle->TxRxState;
-
+    uint8_t dummy;
 	if( (busystate != I2C_BUSY_IN_TX) && (busystate != I2C_BUSY_IN_RX))
 	{
 		pI2CHandle->pRxBuffer = pRxBuffer;
@@ -442,8 +445,14 @@ uint8_t I2C_ControllerReceiveDataIT(I2C_Handle_t *pI2CHandle,uint8_t *pRxBuffer,
 		pI2CHandle->DevAddr = SlaveAddr;
 		pI2CHandle->Sr = Sr;
 
-		
-
+        if(I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_RXNE_FLAG))//要是RXNE已經是1就要清
+        {
+            dummy = pI2CHandle->pI2Cx->RXDR;
+        }
+        if(I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_STOPF_FLAG))
+        {//要是STOP一開始就是1 那就要先清掉
+            pI2CHandle->pI2Cx->ICR |= (1 << I2C_ICR_STOPCF);
+        }
 		//Implement the code to enable Interrupt
 
         uint32_t tempreg = 0;
