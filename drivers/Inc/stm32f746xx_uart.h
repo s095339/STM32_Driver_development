@@ -24,8 +24,8 @@ typedef struct
     UART_Config_t   UART_Config;
     uint8_t         *pTxBuffer;     //store the app. tx buffer address
     uint8_t         *pRxBuffer;   
-    uint8_t         TxLen;          
-    uint8_t         RxLen;// if RxLen < 0 : the length of data is unknown                  
+    uint32_t         TxLen;          
+    uint32_t         RxLen;// if RxLen < 0 : the length of data is unknown                  
     uint8_t         TxState;
     uint8_t         RxState;
 }UART_Handle_t;
