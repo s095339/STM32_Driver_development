@@ -668,7 +668,7 @@ void SPI_IRQPriorityConfig(uint8_t IRQNumber, uint8_t IRQPriority)
 {
     //1. first lets find out the ipr register
     // M7 user guide 4.2,  Interrupt Priority Registers
-    uint8_t iprx = IRQNumber;
+    uint8_t iprx = IRQNumber/4;
     uint8_t iprx_section = IRQNumber %4;
     uint8_t shift_amount = (8*iprx_section) + (8-NO_PR_BITS_IMPLEMENTED);
     /*根據UM 10.1 NVIC features 雖然cortex-M7的processor提供了8bits的中段優先級，
