@@ -405,9 +405,9 @@ void UART_IRQHandling(UART_Handle_t *pHandle)
     {
         UART_ClearFlag(pHandle->pUARTx, UART_TCCF_CRFLAG);
         
-		//Implement the code to enable interrupt for TC 
+		//Implement the code to disable interrupt for TC
 		pHandle->pUARTx->CR1 &= ~(1 << UART_CR1_TCIE);	
-        pHandle->TxState = UART_READY;
+        //pHandle->TxState = UART_READY;
     }
 
     if( UART_GetFlagStatus(pHandle->pUARTx, UART_RXNE_FLAG) && (pHandle->pUARTx->CR1 & 1<<UART_CR1_RXNEIE) )
@@ -532,9 +532,10 @@ void UART_IRQHandling(UART_Handle_t *pHandle)
 
             if(!pHandle->TxLen)
             {
-                //Implement the code to enable interrupt for TXE
+                //Implement the code to disable interrupt for TXE
 
 		        pHandle->pUARTx->CR1 &= ~(1 << UART_CR1_TXEIE);
+		        pHandle->TxState = UART_READY;
                 UART_ApplicationEventCallback(pHandle, UART_EV_TX_COMPLT);
             }
         }
