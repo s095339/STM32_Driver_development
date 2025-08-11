@@ -74,7 +74,7 @@ Additional information:
 */
 
 #include "SEGGER_RTT.h"
-
+#include "main.h"
 #include <string.h>                 // for memcpy
 
 /*********************************************************************
@@ -1186,12 +1186,19 @@ unsigned SEGGER_RTT_WriteDownBuffer(unsigned BufferIndex, const void* pBuffer, u
 *  Notes
 *    (1) Data is stored according to buffer flags.
 */
+
+
 unsigned SEGGER_RTT_Write(unsigned BufferIndex, const void* pBuffer, unsigned NumBytes) {
   unsigned Status;
 
   INIT();
   SEGGER_RTT_LOCK();
-  Status = SEGGER_RTT_WriteNoLock(BufferIndex, pBuffer, NumBytes);  // Call the non-locking write function
+  #ifdef SEGGER_UART_REC
+    //UART_SendBlocking((const uint8_t *)pBuffer, NumBytes);
+    UART_SendDataIT(&hi2c1,pBuffer,NumBytes);
+  #else
+    Status = SEGGER_RTT_WriteNoLock(BufferIndex, pBuffer, NumBytes);  // Call the non-locking write function
+  #endif
   SEGGER_RTT_UNLOCK();
   return Status;
 }
