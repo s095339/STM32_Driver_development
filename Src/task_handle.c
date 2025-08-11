@@ -161,18 +161,32 @@ void i2c_task(void * parameters){
 		if(oled_state == oRunning)
 		{  
 		   
-		   sprintf(buffer,"T = %d.%dC", SHT2x_GetInteger(cel), SHT2x_GetDecimal(cel, 1));
-		   SSD1306_GotoXY(0, 0);
-	   	   SSD1306_Puts(buffer, &Font_11x18, 1);
-		   delay_ms(500);
-		   sprintf(buffer,"RH: %d.%d", SHT2x_GetInteger(rh), SHT2x_GetDecimal(rh, 1));
-		   SSD1306_GotoXY(0, 30);
-		   SSD1306_Puts(buffer, &Font_11x18, 1);
-		   SSD1306_UpdateScreen();
-		}else{
+		   sprintf(buffer,"T = %d.%dC \n RH: %d.%d", 
+				SHT2x_GetInteger(cel), 
+				SHT2x_GetDecimal(cel, 1),
+				SHT2x_GetInteger(rh), 
+				SHT2x_GetDecimal(rh, 1)
+			);
+		   //SSD1306_GotoXY(0, 0);
+	   	   //SSD1306_Puts(buffer, &Font_11x18, 1);
+		   //delay_ms(500);
+		   pBuffer = buffer;
+		   xQueueSend(q_i2ctx, &pBuffer, portMAX_DELAY);
+
+		   //sprintf(buffer,"RH: %d.%d", SHT2x_GetInteger(rh), SHT2x_GetDecimal(rh, 1));
+		   //SSD1306_GotoXY(0, 30);
+		   //SSD1306_Puts(buffer, &Font_11x18, 1);
+		   //SSD1306_UpdateScreen();
+		   //pBuffer = buffer;
+		   //xQueueSend(q_i2ctx, &pBuffer, portMAX_DELAY);
+		}else if(oled_state == closing){
 			
 			//SSD1306_DrawBitmap(0, 0, img, 128, 64, 1);
-			SSD1306_Clear();
+			//SSD1306_Clear();
+			buffer[0] = '\0';
+			pBuffer = buffer;
+		    xQueueSend(q_i2ctx, &pBuffer, portMAX_DELAY);
+
 			portENTER_CRITICAL();
 			oled_state = oIdle;
 			portEXIT_CRITICAL();
@@ -180,6 +194,7 @@ void i2c_task(void * parameters){
         
       
         if(Show_TH_UART_flag ){
+			SEGGER_SYSVIEW_PrintfTarget("UART shows TH\n");
 			portENTER_CRITICAL();
 			Show_TH_UART_flag = 0;
 			portEXIT_CRITICAL();
@@ -189,16 +204,40 @@ void i2c_task(void * parameters){
 				SHT2x_GetInteger(cel), SHT2x_GetDecimal(cel, 1),
 				SHT2x_GetInteger(rh), SHT2x_GetDecimal(rh, 1));
 			xQueueSend(q_uarttx, &pBuffer, portMAX_DELAY);
+			
 		}
         //SSD1306_GotoXY(0, 0);
         //SSD1306_Puts(buffer, &Font_11x18, 1);
 	}
 }
-void th_task(void * parameters){
+void oled_task(void * parameters){
     //SHT2x_SetResolution(RES_14_12);
-    
+    uint32_t *msg;
+    BaseType_t status;
 	while(1){
+		status = xQueueReceive(q_i2ctx, &msg, portMAX_DELAY);
+		//HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen((char*)msg),HAL_MAX_DELAY);
+		if(status == pdTRUE)
+		{
+			char * msg_oled = (char*)msg;
+			char * pNL = NULL;
+			uint8_t i;
+			uint32_t Len = strlen((char*)msg);
 
+			if(Len == 0){
+				SSD1306_Clear();
+				continue;
+			}
+
+			for(i=0; msg_oled[i]!='\n' && i<Len; i++);
+			if(msg_oled[i] == '\n') msg_oled[i] = '\0';
+			SSD1306_GotoXY(0, 0);
+			SSD1306_Puts(msg_oled, &Font_11x18, 1);
+			if(i<Len)pNL = msg_oled+i+1;
+			SSD1306_GotoXY(0, 30);
+			SSD1306_Puts(pNL, &Font_11x18, 1);
+			SSD1306_UpdateScreen();
+		}
 	}
 }
 
