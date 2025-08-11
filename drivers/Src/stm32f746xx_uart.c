@@ -401,6 +401,15 @@ void UART_IRQPriorityConfig(uint8_t IRQNumber, uint32_t IRQPriority)
 }
 void UART_IRQHandling(UART_Handle_t *pHandle)
 {
+    if( UART_GetFlagStatus(pHandle->pUARTx, UART_ORE_FLAG) && (pHandle->pUARTx->CR1 & 1<<UART_CR1_RXNEIE) )
+    {
+        UART_ClearFlag(pHandle->pUARTx, UART_ORE_FLAG);
+        pHandle->pUARTx->RQR |= (1<<UART_RQR_RXFRQ);//flush RDR
+        
+		//Implement the code to disable interrupt for TC
+		pHandle->pUARTx->CR1 &= ~(1 << UART_CR1_TCIE);	
+        //pHandle->TxState = UART_READY;
+    }
     if( UART_GetFlagStatus(pHandle->pUARTx, UART_TC_FLAG) && (pHandle->pUARTx->CR1 & 1<<UART_CR1_TCIE) )
     {
         UART_ClearFlag(pHandle->pUARTx, UART_TCCF_CRFLAG);
@@ -471,9 +480,15 @@ void UART_IRQHandling(UART_Handle_t *pHandle)
                     pHandle->pRxBuffer++;
                     pHandle->RxLen--;
                 }
+            }else
+            {//明明是READY卻發生了中斷 
+
+                pHandle->pUARTx->CR1 &= ~(1 << UART_CR1_RXNEIE);
+                uint16_t dummy = (pHandle->pUARTx->RDR);
+                        
             }
 
-            if(!pHandle->RxLen){
+            if(!pHandle->RxLen && pHandle->RxState != UART_READY){
                 
                 pHandle->pUARTx->CR1 &= ~(1 << UART_CR1_RXNEIE);
                 pHandle->RxState = UART_READY;
