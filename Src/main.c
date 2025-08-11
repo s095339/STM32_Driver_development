@@ -32,13 +32,13 @@ xTaskHandle handle_cmd_task;
 xTaskHandle handle_menu_task;
 xTaskHandle handle_uart_print_task;
 xTaskHandle handle_i2c_task;
-xTaskHandle handle_th_task;
+xTaskHandle handle_oled_task;
 
 void cmd_task(void * parameters);
 void menu_task(void * parameters);
 void uart_print_task(void * parameters);
 void i2c_task(void * parameters);
-void th_task(void * parameters);
+void oled_task(void * parameters);
 //queue
 QueueHandle_t q_uartrx;
 QueueHandle_t q_uarttx;
@@ -101,7 +101,7 @@ int main(void)
 	UART_Init(&usart1);
 	UART_IRQPriorityConfig(IRQ_NO_USART1, 10);
 	UART_IRQInterruptConfig(IRQ_NO_USART1, ENABLE);
-	
+
 	UART_GPIO_Inits();
 	//=================//
 	// BSP        Init //
@@ -137,7 +137,7 @@ int main(void)
 	oled_state = oIdle;
 	SSD1306_Fill(SSD1306_COLOR_BLACK);
 	SSD1306_GotoXY(0,0);
-	SSD1306_Puts("Temp&Humid", &Font_11x18, 0);
+	SSD1306_Puts("Temp&Humid", &Font_11x18, 1);
 	SSD1306_GotoXY(0, 30);
 	SSD1306_Puts("Sensor", &Font_11x18, 1);
 	SSD1306_UpdateScreen();
@@ -159,8 +159,8 @@ int main(void)
 	configASSERT(status == pdPASS);
 	status = xTaskCreate(i2c_task, "i2c_task", 250, NULL, 2, &handle_i2c_task);
 	configASSERT(status == pdPASS);
-	//status = xTaskCreate(th_task, "th_task", 250, NULL, 2, &handle_th_task);
-	//configASSERT(status == pdPASS);
+	status = xTaskCreate(oled_task, "oled_task", 250, NULL, 2, &handle_oled_task);
+	configASSERT(status == pdPASS);
 
 	q_uartrx = xQueueCreate(10, sizeof(char));
   	configASSERT(q_uartrx != NULL);
@@ -178,7 +178,7 @@ int main(void)
 	SEGGER_SYSVIEW_Conf();
     SEGGER_SYSVIEW_Start();
 
-
+	
 	vTaskStartScheduler();
 	//==========================================//
 	for(;;);
