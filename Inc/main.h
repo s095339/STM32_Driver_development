@@ -31,12 +31,15 @@ extern xTaskHandle handle_menu_task;
 extern xTaskHandle handle_uart_print_task;
 extern xTaskHandle handle_i2c_task;
 extern xTaskHandle handle_oled_task;
+extern xTaskHandle handle_bt_task;
+
 
 extern void cmd_task(void * parameters);
 extern void menu_task(void * parameters);
 extern void uart_print_task(void * parameters);
 extern void i2c_task(void * parameters);
 extern void oled_task(void * parameters);
+extern void bt_task(void * parameters);
 
 //queue
 extern QueueHandle_t q_uartrx;
@@ -68,4 +71,11 @@ extern uint8_t dt_1[256];
 extern uint8_t dt_2[2];
 
 #define SEGGER_UART_REC
+
+//BT
+#define BT_ISCONNECTED() GPIO_ReadFromInputPin(GPIOI, GPIO_PIN_NO_3)
+
+
+//usart
+extern UART_Handle_t usart1;
 #endif /* MAIN_H_ */

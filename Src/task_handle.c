@@ -136,6 +136,8 @@ void i2c_task(void * parameters){
 			xTaskNotifyWait(0,0,NULL,portMAX_DELAY);
 		}
 		int a = 1;
+
+		//Measurement====================================================
         SHT2x_GetTemperatureIT(0);
         xTaskNotifyWait(0,0,NULL,portMAX_DELAY);
         status = xQueueReceive(q_i2crx, &received_data, portMAX_DELAY);
@@ -154,7 +156,7 @@ void i2c_task(void * parameters){
         // Relative Humid
         SHT2x_GetRelativeHumidityIT(0);
         xTaskNotifyWait(0,0,NULL,portMAX_DELAY);
-
+		//============================================================
 
         status = xQueueReceive(q_i2crx, &received_data, portMAX_DELAY);
 
@@ -248,7 +250,53 @@ void oled_task(void * parameters){
 	}
 }
 
-
+void bt_task(void * parameters)
+{
+	const char * uart1_msg1 = "BT_CONNECTED";
+	const char * uart1_msg2 = "BT_DISCONNECTED";
+	char buffer[20];
+	char * pBuffer;
+	BaseType_t status;
+	while(1)
+	{
+		status = xTaskNotifyWait(0,0,NULL,portMAX_DELAY);
+		if(status != pdTRUE) continue;
+		if(BT_ISCONNECTED())
+		{
+			//UART_SendDataIT(&usart1, (uint8_t *)uart1_msg1, strlen(uart1_msg1));
+			//xTaskNotifyFromISR(bt_task,(uint32_t)&bt_cmd, eSetValueWithOverwrite,NULL);
+			sprintf(buffer,"BlueTooth\nConnected");
+		   //SSD1306_GotoXY(0, 0);
+	   	   //SSD1306_Puts(buffer, &Font_11x18, 1);
+		   //delay_ms(500);
+		   pBuffer = buffer;
+		   xQueueSend(q_i2ctx, &pBuffer, portMAX_DELAY);
+		   delay_ms(1000);
+		}
+		else
+		{
+			//UART_SendDataIT(&usart1, (uint8_t *)uart1_msg2, strlen(uart1_msg2));
+			sprintf(buffer,"BlueTooth\nDisconnected");
+		   //SSD1306_GotoXY(0, 0);
+	   	   //SSD1306_Puts(buffer, &Font_11x18, 1);
+		   //delay_ms(500);
+		   pBuffer = buffer;
+			
+			
+		   xQueueSend(q_i2ctx, &pBuffer, portMAX_DELAY);
+		   delay_ms(1000);
+		   
+		   if(oled_state == oRunning){
+		   		portENTER_CRITICAL();
+				oled_state = closing;
+				portEXIT_CRITICAL();
+		   }
+		   
+		}
+		memset(buffer, 0, sizeof(buffer));
+		xQueueSend(q_i2ctx, &pBuffer, portMAX_DELAY);
+	}
+}
 
 //private funciton
 

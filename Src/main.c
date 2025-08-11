@@ -26,6 +26,7 @@ I2C_Handle_t hi2c1 = {
 	};
 static void I2C1_GPIO_Inits(void);
 static void UART_GPIO_Inits(void);
+static void GPIO_Interrupt_Inits(void);
 //================FreeRTOS================//
 //Task
 xTaskHandle handle_cmd_task;
@@ -33,12 +34,15 @@ xTaskHandle handle_menu_task;
 xTaskHandle handle_uart_print_task;
 xTaskHandle handle_i2c_task;
 xTaskHandle handle_oled_task;
+xTaskHandle handle_bt_task;
 
 void cmd_task(void * parameters);
 void menu_task(void * parameters);
 void uart_print_task(void * parameters);
 void i2c_task(void * parameters);
 void oled_task(void * parameters);
+void bt_task(void * parameters);
+
 //queue
 QueueHandle_t q_uartrx;
 QueueHandle_t q_uarttx;
@@ -90,7 +94,7 @@ int main(void)
 	UART_IRQInterruptConfig(IRQ_NO_USART6, ENABLE);
 	
 	usart1.pUARTx = USART1;
-	usart1.UART_Config.UART_Baud = UART_STD_BAUD_921600;
+	usart1.UART_Config.UART_Baud = UART_STD_BAUD_115200;
 	usart1.UART_Config.UART_Mode = UART_MODE_TXRX;
 	usart1.UART_Config.UART_NoOfStopBits = UART_STOPBITS_1;
 	usart1.UART_Config.UART_ParityControl = UART_PARITY_DISABLE;
@@ -103,6 +107,7 @@ int main(void)
 	UART_IRQInterruptConfig(IRQ_NO_USART1, ENABLE);
 
 	UART_GPIO_Inits();
+	GPIO_Interrupt_Inits();
 	//=================//
 	// BSP        Init //
 	//=================//
@@ -160,6 +165,8 @@ int main(void)
 	status = xTaskCreate(i2c_task, "i2c_task", 250, NULL, 2, &handle_i2c_task);
 	configASSERT(status == pdPASS);
 	status = xTaskCreate(oled_task, "oled_task", 250, NULL, 2, &handle_oled_task);
+	configASSERT(status == pdPASS);
+	status = xTaskCreate(bt_task, "bt_task", 250, NULL, 2, &handle_bt_task);
 	configASSERT(status == pdPASS);
 
 	q_uartrx = xQueueCreate(10, sizeof(char));
@@ -225,7 +232,7 @@ static void UART_GPIO_Inits(void){
 	I2CPinsC.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_ALTFN;
 	I2CPinsC.GPIO_PinConfig.GPIO_PinAltFunMode = 8;
 	I2CPinsC.GPIO_PinConfig.GPIO_PinOPType = GPIO_OP_TYPE_PP; //i2c需要opendrain
-	I2CPinsC.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_PIN_PU;
+	I2CPinsC.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_NO_PUPD;
 	I2CPinsC.GPIO_PinConfig.GPIO_PinSpeed = GPIO_SPEED_FAST;
 
 	//Tx
@@ -240,7 +247,7 @@ static void UART_GPIO_Inits(void){
 	I2CPinsC.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_ALTFN;
 	I2CPinsC.GPIO_PinConfig.GPIO_PinAltFunMode = 7;
 	I2CPinsC.GPIO_PinConfig.GPIO_PinOPType = GPIO_OP_TYPE_PP; //i2c需要opendrain
-	I2CPinsC.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_PIN_PU;
+	I2CPinsC.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_NO_PUPD;
 	I2CPinsC.GPIO_PinConfig.GPIO_PinSpeed = GPIO_SPEED_FAST;
 
 	I2CPinsC.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_NO_7;
@@ -250,15 +257,48 @@ static void UART_GPIO_Inits(void){
 	I2CPinsC.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_ALTFN;
 	I2CPinsC.GPIO_PinConfig.GPIO_PinAltFunMode = 7;
 	I2CPinsC.GPIO_PinConfig.GPIO_PinOPType = GPIO_OP_TYPE_PP; //i2c需要opendrain
-	I2CPinsC.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_PIN_PU;
+	I2CPinsC.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_NO_PUPD;
 	I2CPinsC.GPIO_PinConfig.GPIO_PinSpeed = GPIO_SPEED_FAST;
 
 	I2CPinsC.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_NO_9;
 	GPIO_Init(&I2CPinsC);
 
 }
+static void GPIO_Interrupt_Inits(void){
+	GPIO_Handle_t btn;
+	memset(&btn, 0, sizeof(btn));
+	btn.pGPIOx = GPIOI;//PI11
+	btn.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_NO_3;
+	btn.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_IT_RFT;
+	btn.GPIO_PinConfig.GPIO_PinSpeed = GPIO_SPEED_FAST;
+	btn.GPIO_PinConfig.GPIO_PinOPType = GPIO_OP_TYPE_PP;
+	btn.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_NO_PUPD;
+	GPIO_Init(&btn);
+	GPIO_IRQPriorityConfig(IRQ_NO_EXTI3, NVIC_IRQ_RRI15);//optional 有多個interrupt時才有必要去設定這個
+	//開啟GPIOI pin number = 11的interrupt 那他將會是EXTI11，Interrupt number:40
+	GPIO_IRQITConfig(IRQ_NO_EXTI3, ENABLE);
+}
 
 
+void EXTI3_IRQHandler(void){
+	GPIO_IRQHandling(GPIO_PIN_NO_3);// clear the pending register
+	uint32_t bt_cmd;
+	if(BT_ISCONNECTED())
+	{
+		//UART_SendDataIT(&usart1, (uint8_t *)uart1_msg1, strlen(uart1_msg1));
+		//xTaskNotifyFromISR(bt_task,(uint32_t)&bt_cmd, eSetValueWithOverwrite,NULL);
+		bt_cmd = 1;
+	}
+	else
+	{
+		//UART_SendDataIT(&usart1, (uint8_t *)uart1_msg2, strlen(uart1_msg2));
+		bt_cmd = 0;
+	}
+	xTaskNotifyFromISR(handle_bt_task,0, eNoAction,NULL);
+	
+}
+
+// interrupt callback function 
 void UART_ApplicationEventCallback(UART_Handle_t *pUARTHandle,uint8_t AppEv)
 {
 	//static uint32_t a = 0;
@@ -274,7 +314,8 @@ void UART_ApplicationEventCallback(UART_Handle_t *pUARTHandle,uint8_t AppEv)
 		{
 			xTaskNotifyFromISR(handle_cmd_task, 0, eNoAction,NULL);
 		}
-		while(UART_ReceiveDataIT(&usart6, &user_data, 1)!=UART_READY);
+		if(usart6.RxState == UART_READY)
+			while(UART_ReceiveDataIT(&usart6, &user_data, 1)!=UART_READY);
 		//a=strlen(RxBuff);
 	}
 	if(AppEv == UART_EV_TX_COMPLT)
