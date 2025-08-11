@@ -19,6 +19,7 @@ void cmd_task(void * parameters){
 		ret = xTaskNotifyWait(0,0,NULL,portMAX_DELAY);
 		if(ret == pdTRUE){
 			// process the user data(command) stored in input data queue;
+			SEGGER_SYSVIEW_PrintfTarget("UART command\n");
 			extract_command(&cmd);
             xTaskNotify(handle_menu_task, (uint32_t)&cmd, eSetValueWithOverwrite);
 		}
@@ -64,21 +65,27 @@ void menu_task(void * parameters){
 				break;
 			case 2:
                 s = "Turn on the OLED\n";
-				xQueueSend(q_uarttx, &s, portMAX_DELAY);
+				
                 if(oled_state == oIdle)
-                {   
-					portENTER_CRITICAL();
-					oled_state = oRunning;
-					portEXIT_CRITICAL();
+                {   	
                     xTaskNotify(handle_i2c_task,0,eNoAction);
                 }
+
+				portENTER_CRITICAL();
+				oled_state = oRunning;
+				portEXIT_CRITICAL();
+
+				xQueueSend(q_uarttx, &s, portMAX_DELAY);
 				break;
 			case 3:
                 s = "Turn off the OLED\n";
                 xQueueSend(q_uarttx, &s, portMAX_DELAY);
-				portENTER_CRITICAL();
-                oled_state = closing;
-				portEXIT_CRITICAL();
+				if(oled_state == oRunning)
+				{
+					portENTER_CRITICAL();
+                	oled_state = closing;
+					portEXIT_CRITICAL();
+				}
 				break;
 			default:
 				xQueueSend(q_uarttx, &msg_inv, portMAX_DELAY);
