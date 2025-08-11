@@ -13,6 +13,7 @@
 
 //Peripheral Initialization===================
 UART_Handle_t usart6;
+UART_Handle_t usart1;
 I2C_Handle_t hi2c1 = {
 		.pI2Cx = I2C1,
 		.I2C_Config = {
@@ -88,6 +89,19 @@ int main(void)
 	UART_IRQPriorityConfig(IRQ_NO_USART6, 10);
 	UART_IRQInterruptConfig(IRQ_NO_USART6, ENABLE);
 	
+	usart1.pUARTx = USART1;
+	usart1.UART_Config.UART_Baud = UART_STD_BAUD_921600;
+	usart1.UART_Config.UART_Mode = UART_MODE_TXRX;
+	usart1.UART_Config.UART_NoOfStopBits = UART_STOPBITS_1;
+	usart1.UART_Config.UART_ParityControl = UART_PARITY_DISABLE;
+	usart1.UART_Config.UART_WordLength = UART_WORDLEN_8BITS;
+	usart1.UART_Config.UART_HWFlowControl = UART_HW_FLOW_CTRL_NONE;
+	usart1.RxState = UART_READY;
+	usart1.TxState = UART_READY;
+	UART_Init(&usart1);
+	UART_IRQPriorityConfig(IRQ_NO_USART1, 10);
+	UART_IRQInterruptConfig(IRQ_NO_USART1, ENABLE);
+	
 	UART_GPIO_Inits();
 	//=================//
 	// BSP        Init //
@@ -158,72 +172,33 @@ int main(void)
  	configASSERT(q_i2ctx != NULL);
 
 	while(UART_ReceiveDataIT(&usart6, &user_data, 1) != UART_READY);
+	const char * msg = "Hello USART1";
+	while(UART_SendDataIT(&usart1, "Hello USART1", strlen(msg)) != UART_READY);
+
+	SEGGER_SYSVIEW_Conf();
+    SEGGER_SYSVIEW_Start();
 
 
 	vTaskStartScheduler();
 	//==========================================//
-	for(;;)
-	{
-		unsigned char buffer[100] = { 0 };
-		/* Gets current temperature & relative humidity. */
-		float cel = SHT2x_GetTemperature(0);
-		/* Converts temperature to degrees Fahrenheit and Kelvin */
-		float fah = SHT2x_CelsiusToFahrenheit(cel);
-		float kel = SHT2x_CelsiusToKelvin(cel);
-		float rh = SHT2x_GetRelativeHumidity(1);
-		/* May show warning below. Ignore and proceed. */
-		sprintf(buffer,
-				"%d.%dºC, %d.%dºF, %d.%d K, %d.%d%% RH\n",
-				SHT2x_GetInteger(cel), SHT2x_GetDecimal(cel, 1),
-				SHT2x_GetInteger(fah), SHT2x_GetDecimal(fah, 1),
-				SHT2x_GetInteger(kel), SHT2x_GetDecimal(kel, 1),
-				SHT2x_GetInteger(rh), SHT2x_GetDecimal(rh, 1));
-		//HAL_UART_Transmit(&huart1, buffer, strlen(buffer), 1000);
-		UART_SendData(&usart6, (uint8_t*)buffer, strlen(buffer));
-
-		sprintf(buffer,
-						"%d.%d C",
-						SHT2x_GetInteger(cel), SHT2x_GetDecimal(cel, 1),
-						SHT2x_GetInteger(fah), SHT2x_GetDecimal(fah, 1));
-
-		//LCD
-		//HD44780_SetCursor(0,0);
-		//HD44780_PrintStr(buffer);
-		//HD44780_PrintSpecialChar(1);
-		//OLED
-		SSD1306_GotoXY(0, 0);
-	   SSD1306_Puts(buffer, &Font_11x18, 1);
-
-
-
-		sprintf(buffer,
-								"%d.%d%% RH",
-								SHT2x_GetInteger(kel), SHT2x_GetDecimal(kel, 1),
-								SHT2x_GetInteger(rh), SHT2x_GetDecimal(rh, 1));
-		//LCD
-		//HD44780_Cursor();
-		//HD44780_SetCursor(0,1);
-		//HD44780_PrintStr(buffer);
-		//HD44780_PrintSpecialChar(0);
-		//OLED
-		SSD1306_GotoXY(0, 30);
-		   SSD1306_Puts(buffer, &Font_11x18, 1);
-		   SSD1306_UpdateScreen();
-
-		//delay();
-		//ssd1306_TestAll();
-		//delay();
-
-	}
+	for(;;);
 	return 0;
 }
 void USART6_IRQHandler()
 {
+	SEGGER_SYSVIEW_RecordEnterISR();
 	UART_IRQHandling(&usart6);
+	SEGGER_SYSVIEW_RecordExitISR();
+}
+void USART1_IRQHandler()
+{
+	UART_IRQHandling(&usart1);
 }
 void I2C1_EV_IRQHandler(void)
 {
+	SEGGER_SYSVIEW_RecordEnterISR();
 	I2C_EV_IRQHandling(&hi2c1);
+	SEGGER_SYSVIEW_RecordExitISR();
 }
 
 
@@ -244,6 +219,7 @@ static void I2C1_GPIO_Inits(void){
 	GPIO_Init(&I2CPinsB);
 }
 static void UART_GPIO_Inits(void){
+	//Usart6
 	GPIO_Handle_t I2CPinsC;
 	I2CPinsC.pGPIOx = GPIOC;
 	I2CPinsC.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_ALTFN;
@@ -258,6 +234,28 @@ static void UART_GPIO_Inits(void){
 	//Rx
 	I2CPinsC.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_NO_7;
 	GPIO_Init(&I2CPinsC);
+	//Usart1
+	//Rx
+	I2CPinsC.pGPIOx = GPIOB;
+	I2CPinsC.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_ALTFN;
+	I2CPinsC.GPIO_PinConfig.GPIO_PinAltFunMode = 7;
+	I2CPinsC.GPIO_PinConfig.GPIO_PinOPType = GPIO_OP_TYPE_PP; //i2c需要opendrain
+	I2CPinsC.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_PIN_PU;
+	I2CPinsC.GPIO_PinConfig.GPIO_PinSpeed = GPIO_SPEED_FAST;
+
+	I2CPinsC.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_NO_7;
+	GPIO_Init(&I2CPinsC);
+	//Tx
+	I2CPinsC.pGPIOx = GPIOA;
+	I2CPinsC.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_ALTFN;
+	I2CPinsC.GPIO_PinConfig.GPIO_PinAltFunMode = 7;
+	I2CPinsC.GPIO_PinConfig.GPIO_PinOPType = GPIO_OP_TYPE_PP; //i2c需要opendrain
+	I2CPinsC.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_PIN_PU;
+	I2CPinsC.GPIO_PinConfig.GPIO_PinSpeed = GPIO_SPEED_FAST;
+
+	I2CPinsC.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_NO_9;
+	GPIO_Init(&I2CPinsC);
+
 }
 
 
@@ -276,7 +274,7 @@ void UART_ApplicationEventCallback(UART_Handle_t *pUARTHandle,uint8_t AppEv)
 		{
 			xTaskNotifyFromISR(handle_cmd_task, 0, eNoAction,NULL);
 		}
-		UART_ReceiveDataIT(&usart6, &user_data, 1);
+		while(UART_ReceiveDataIT(&usart6, &user_data, 1)!=UART_READY);
 		//a=strlen(RxBuff);
 	}
 	if(AppEv == UART_EV_TX_COMPLT)
